@@ -1,21 +1,19 @@
-OnlineGiftAidSubmission Extension for CiviCRM 4.2+
--------------------------------------------
+# OnlineGiftAidSubmission Extension for CiviCRM
 
-Installation
+**Submit Gift Aid reports directly to the UK Government (HMRC Treasury)**
 
-Install CiviCRM v4.4. Note that this extension does not work with previous versions of CiviCRM.
+For information about the latest improvements, please visit: https://vedaconsulting.co.uk/gift-aid-for-civicrm
 
-Create and set the extensions directory in CiviCRM
+## Requirements
+* The GiftAid extension from https://github.com/mattwire/uk.co.compucorp.civicrm.giftaid
+* CiviCRM 5.13+
 
-Download this extension in the above directory.
+## Licensing
+The extension is licensed under [AGPL-3.0](LICENSE.txt).
 
-Install this extension in CiviCRM on q=civicrm/admin/extensions?reset=1
+## Release Notes
+### 1.5.2
 
-For information about the latest improvements, please visit: http://vedaconsulting.co.uk/gift-aid-for-civicrm
-
--------------------------------------------
-v1.5.2
--------------------------------------------
 Introduced two new hooks
 
 giftAidOnlineSubmitted( $batchID )
@@ -35,9 +33,7 @@ There is also a new table that holds contributions that were classed as invalid 
 
 The script is in scripts/sql/civi_gift_aid_rejected_contributions
 
--------------------------------------------
-v1.6
--------------------------------------------
+### 1.6
 
 Introduced 2 new features
 
@@ -71,9 +67,7 @@ Review the Display Columns section. Not to worry about the Filter, as batch ID w
 Click 'Preview Report' button
 Under 'Create Report' section, give a report title and set the permissions and click 'Create Report' button. You dont need to include report in navigation menu, as the report link will be displayed in Online Gift Aid Submission page for each batch.
 
--------------------------------------------
-v1.6.1
--------------------------------------------
+### 1.6.1
 
 Change permission who can submit the batches to HMRC
 
@@ -81,15 +75,11 @@ Change permission who can submit the batches to HMRC
 
 Make sure the role has the above permission in place in order to submit the batches to HMRC. 
 
--------------------------------------------
-v1.6.2
--------------------------------------------
+### 1.6.2
 
 Amended custom search to use contribution dates and not declaration dates as this is not as useful
 
--------------------------------------------
-v1.7.0
--------------------------------------------
+### 1.7.0
 
 Added a new column to the `civicrm_gift_aid_rejected_contributions` table, in order to report rejections based on Batch Id and Submission. 
 

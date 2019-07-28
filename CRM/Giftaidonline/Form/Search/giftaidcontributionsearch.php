@@ -16,7 +16,7 @@ class CRM_Giftaidonline_Form_Search_giftaidcontributionsearch extends CRM_Contac
 
       function buildForm(&$form) {
     CRM_Utils_System::setTitle(ts('Gift Aid Claim Search'));
-    
+
     $activityRoles = array(
       1 => ts('With Valid Declaration'),
       2 => ts('All Claims'),
@@ -24,7 +24,7 @@ class CRM_Giftaidonline_Form_Search_giftaidcontributionsearch extends CRM_Contac
     $form->addRadio('contribution_claim', ts("Contributions that aren't Claimed"), $activityRoles);
     $form->addDate( 'start_date', ts('Start Date : '), false, array( 'formatType' => 'custom' ) );
     $form->addDate( 'end_date', ts('End Date : '), false, array( 'formatType' => 'custom' ) );
-    
+
 
     // Optionally define default search values
     $defaults = array( 'contribution_claim' => 2 );
@@ -38,7 +38,7 @@ class CRM_Giftaidonline_Form_Search_giftaidcontributionsearch extends CRM_Contac
                     ,  'start_date'
                     ,  'end_date'
     );
-    
+
     $form->assign('elements',$elements);
   }
 
@@ -98,7 +98,7 @@ class CRM_Giftaidonline_Form_Search_giftaidcontributionsearch extends CRM_Contac
       contribution.id        as contribution_id,
       contribution.receive_date as receive_date
 SELECT;
-    
+
     return $select;
   }
 
@@ -138,14 +138,14 @@ SELECT;
       $batchTypeTableJoin = "INNER JOIN civicrm_batch batch ON ( entity_batch.batch_id = batch.id )";
       $batchTypeWhereClause = " AND batch.type_id = {$batchTypeId}";
     }
-    
-    $where  =<<<WHERE
-    contribution.id NOT IN 
+
+    $where = "
+      contribution.id NOT IN
       ( SELECT entity_batch.entity_id 
         FROM civicrm_entity_batch entity_batch {$batchTypeTableJoin}
         WHERE entity_table = 'civicrm_contribution' {$batchTypeWhereClause} 
-       )
-WHERE;
+      )
+    ";
 
     $count  = 1;
     $clause = array();
@@ -158,7 +158,7 @@ WHERE;
       $clause[] = "(declaration.end_date IS NULL OR declaration.end_date >= contribution.receive_date)";
       $count++;
     }
-    
+
     $startDate = CRM_Utils_Array::value('start_date', $this->_formValues);
     if( $startDate ){
       $clause[] = "contribution.receive_date >= '".date('Y-m-d H:i:s', strtotime($startDate))."'";
