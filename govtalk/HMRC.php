@@ -38,7 +38,7 @@ class Hmrc extends GovTalk {
 	 *
 	 * @var boolean
 	 */
-	private $_generateIRmark = true;
+	protected $_generateIRmark = true;
 
 	/**
 	 * Details of the agent sending the return declaration.
@@ -241,8 +241,8 @@ class Hmrc extends GovTalk {
 			$packageSimpleXML = simplexml_load_string($package);
 			$packageNamespaces = $packageSimpleXML->getNamespaces();
 
-			preg_match('/<Body>(.*?)<\/Body>/', str_replace("\n", '¬', $package), $matches);
-			$packageBody = str_replace('¬', "\n", $matches[1]);
+			preg_match('/<Body>(.*?)<\/Body>/', str_replace("\n", 'ï¿½', $package), $matches);
+			$packageBody = str_replace('ï¿½', "\n", $matches[1]);
 
 			$irMark = base64_encode($this->_generateIRMark($packageBody, $packageNamespaces));
 			$package = str_replace('IRmark+Token', $irMark, $package);
@@ -263,7 +263,7 @@ class Hmrc extends GovTalk {
 	 * @param $xmlString string The XML to generate the IRmark hash from.
 	 * @return string The IRmark hash.
 	 */
-	private function _generateIRMark($xmlString, $namespaces = null) {
+	protected function _generateIRMark($xmlString, $namespaces = null) {
 
 		if (is_string($xmlString)) {
 			$xmlString = preg_replace('/<(vat:)?IRmark Type="generic">[A-Za-z0-9\/\+=]*<\/(vat:)?IRmark>/', '', $xmlString, -1, $matchCount);
