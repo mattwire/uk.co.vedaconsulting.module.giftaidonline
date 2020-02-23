@@ -6,6 +6,7 @@ require_once 'giftaidonline.civix.php';
  * Implementation of hook_civicrm_config
  */
 define('GIFTAID_FAILURE_REPORT_ID', 'uk.co.vedaconsulting.module.giftaidonline/giftaidonlinefailure');
+
 function giftaidonline_civicrm_config(&$config) {
   _giftaidonline_civix_civicrm_config($config);
 }

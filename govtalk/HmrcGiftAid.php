@@ -28,9 +28,6 @@
  * @copyright 2013, Veda Consulting Limited
  * @licence http://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License
  */
-require_once 'CRM/Core/Page.php';
-require_once ( dirname(__FILE__) . '/GiftAidGovTalk.php' );
-
 class HmrcGiftAid extends Hmrc {
 
   /**
@@ -38,7 +35,7 @@ class HmrcGiftAid extends Hmrc {
    *
    * @var array
    */
-  private $_Settings    = array();
+  private $_Settings = [];
 
   /* Magic methods. */
 
@@ -58,7 +55,7 @@ class HmrcGiftAid extends Hmrc {
       FROM   civicrm_gift_aid_submission_setting setting
 EOD;
     $oDao = CRM_Core_DAO::executeQuery( $cSettingsSelect, array() );
-    while ( $oDao->fetch() ) {
+    while ($oDao->fetch()) {
       $this->_Settings[$oDao->name] = $oDao->value;
     }
 
@@ -82,7 +79,7 @@ EOD;
         break;
     }
 
-    $this->setMessageAuthentication( 'clear' );
+    $this->setMessageAuthentication('clear');
   }
 
   /**
@@ -182,8 +179,12 @@ SQL;
     return $postcode;
   }
 
-  function IsPostcode($postcode)
-  {
+  /**
+   * @param string $postcode
+   *
+   * @return bool
+   */
+  private function IsPostcode($postcode) {
     $postcode = strtoupper(str_replace(' ','',$postcode));
     if(preg_match("/^[A-Z]{1,2}[0-9]{2,3}[A-Z]{2}$/",$postcode) || preg_match("/^[A-Z]{1,2}[0-9]{1}[A-Z]{1}[0-9]{1}[A-Z]{2}$/",$postcode) || preg_match("/^GIR0[A-Z]{2}$/",$postcode))
     {
@@ -195,9 +196,14 @@ SQL;
     }
   }
 
-  private function isValidPersonName( $p_name ) {
+  /**
+   * @param $p_name
+   *
+   * @return bool
+   */
+  private function isValidPersonName($p_name) {
     $bValid = true;
-    if ( empty( $p_name ) ||  !( preg_match('#^[A-Z \'.-]{1,50}$#i', $p_name ) ) ) {
+    if (empty($p_name) || !(preg_match('#^[A-Z \'.-]{1,50}$#i', $p_name))) {
       /* Name must be 1-50 characters Alphabetic including the single quote, dot, and hyphen symbol */
       $bValid = false;
     }
@@ -205,7 +211,25 @@ SQL;
     return $bValid;
   }
 
-  private function logBadDonorRecord( $batch_id
+  /**
+   * @param int $batch_id
+   * @param string $batch_name
+   * @param string $created_date
+   * @param int $contribution_id
+   * @param int $contact_id
+   * @param string $first_name
+   * @param string $last_name
+   * @param $amount
+   * @param $gift_aid_amount
+   * @param string $address
+   * @param string $postcode
+   * @param string $validation_msg
+   * @param array $validation_detail
+   *
+   * @return string|null
+   * @throws \Exception
+   */
+  private function logBadDonorRecord($batch_id
     , $batch_name
     , $created_date
     , $contribution_id
@@ -217,7 +241,9 @@ SQL;
     , $address
     , $postcode
     , $validation_msg
+    , $validation_detail
   ) {
+    $validationDetailString = implode('; ', $validation_detail);
     $sMessage =<<<EOF
         batch_id: $batch_id
       , batch_name: $batch_name
@@ -231,6 +257,7 @@ SQL;
       , address: $address
       , postcode: $postcode
       , message: $validation_msg
+      , detail: $validationDetailString
 EOF;
 
     CRM_Core_Error::debug_log_message( "Invalid Donor Record. Details ...\n$sMessage", TRUE );
@@ -240,20 +267,24 @@ EOF;
               batch_id
             , contribution_id
             , rejection_reason
+            , rejection_detail
             ) VALUES (
               %1
             , %2
             , %3
+            , %4
             );
 EOF;
-    $aQueryParam = array( 1   => array( $batch_id, 'Integer' )
-    , 2   => array( $contribution_id, 'Integer' )
-    , 3   => array( empty( $validation_msg                ) ? '' : $validation_msg               , 'String'  )
-    );
+    $aQueryParam = [
+      1 => [$batch_id, 'Integer'],
+      2 => [$contribution_id, 'Integer'],
+      3 => [empty($validation_msg) ? '' : $validation_msg, 'String'],
+      4 => [$validationDetailString, 'String']
+    ];
 
-    $oDao = CRM_Core_DAO::executeQuery( $sSql, $aQueryParam );
-    if ( is_a( $oDao, 'DB_Error' ) ) {
-      CRM_Core_Error::fatal( 'Trying to create a new Submission record failed.' );
+    $oDao = CRM_Core_DAO::executeQuery($sSql, $aQueryParam);
+    if (is_a($oDao, 'DB_Error')) {
+      CRM_Core_Error::fatal('Trying to create a new Submission record failed.');
     }
     $rejectionId = CRM_Core_DAO::singleValueQuery('SELECT LAST_INSERT_ID()');
 
@@ -264,18 +295,25 @@ EOF;
       AND entity_id = %2
       AND entity_table = 'civicrm_contribution'
 EOD;
-    $aQueryParam          = array( 1 => array( $batch_id, 'Integer' )
-    , 2 => array( $contribution_id, 'Integer' ));
+    $aQueryParam = [
+      1 => [$batch_id, 'Integer'],
+      2 => [$contribution_id, 'Integer']
+    ];
 
-    $oDao                 = CRM_Core_DAO::executeQuery( $cEntityDelete, $aQueryParam );
+    CRM_Core_DAO::executeQuery($cEntityDelete, $aQueryParam);
 
     // hook to carry out other actions on removal of contribution from a gift aid online batch
-    CRM_Giftaidonline_Utils_Hook::invalidGiftAidOnlineContribution( $batch_id, $contribution_id );
+    CRM_Giftaidonline_Utils_Hook::invalidGiftAidOnlineContribution($batch_id, $contribution_id);
 
     return $rejectionId;
   }
 
-  private function build_giftaid_donors_xml( $pBatchId, &$package, &$rejections ) {
+  /**
+   * @param int $pBatchId
+   * @param \XMLWriter $package
+   * @param array $rejections
+   */
+  private function build_giftaid_donors_xml($pBatchId, &$package, &$rejections) {
     $cDonorSelect = <<<EOD
       SELECT batch.id                                                  AS batch_id
       ,      batch.title                                               AS batch_name
@@ -293,49 +331,70 @@ EOD;
       INNER JOIN civicrm_value_gift_aid_submission value_gift_aid_submission   ON value_gift_aid_submission.entity_id  = contribution.id
       WHERE batch.id = %1
 EOD;
-    $aQueryParam          = array( 1 => array( $pBatchId, 'Integer' ) );
-    $oDao                 = CRM_Core_DAO::executeQuery( $cDonorSelect, $aQueryParam );
-    $aDonors              = array();
-    $bValidDonorData      = true;
+    $aQueryParam          = [1 => [$pBatchId, 'Integer']];
+    $oDao                 = CRM_Core_DAO::executeQuery($cDonorSelect, $aQueryParam);
+    $aDonors              = [];
     $aAddress['address']  = null;
     $aAddress['postcode'] = null;
 
     while ( $oDao->fetch() ) {
-      $validationMsg = "";
-      $bValidDonorData = self::isValidPersonName( $oDao->first_name ) && self::isValidPersonName( $oDao->last_name );
-      if ( $bValidDonorData ) {
-        $aAddress  = self::getDonorAddress( $oDao->contact_id
-          , $oDao->contribution_id
-          , date('YmdHis', strtotime( $oDao->created_date ) ) );
-        // Need to clean up the postcode before we can submit it
-        $formattedPostcode = self::postcodeFormat( $aAddress['postcode'] );
+      $validationMsg = '';
+      $validationDetail = [];
 
-        $bValidAddress = !( empty( $aAddress['address'] ) ) && self::IsPostcode( $formattedPostcode ) ;
-        if ( !$bValidAddress ) {
+      // Check first/last name
+      $bValidDonorData = TRUE;
+      if (!self::isValidPersonName($oDao->first_name)) {
+        $bValidDonorData = FALSE;
+        $validationDetail[] = 'First name invalid';
+      }
+      if (!self::isValidPersonName($oDao->last_name)) {
+        $bValidDonorData = FALSE;
+        $validationDetail[] = 'Last name invalid';
+      }
+      if (!$bValidDonorData) {
+        $validationMsg = "INVALID DONOR DETAILS : FIRST NAME OR LAST NAME MISSING ";
+      }
+      else {
+        $aAddress = self::getDonorAddress($oDao->contact_id, $oDao->contribution_id, date('YmdHis', strtotime($oDao->created_date)));
+        // Need to clean up the postcode before we can submit it
+        $formattedPostcode = self::postcodeFormat($aAddress['postcode']);
+
+        // Check address / postcode
+        $bValidAddress = TRUE;
+        if (empty($aAddress['address'])) {
+          $validationDetail[] = 'Empty address';
+          $bValidAddress = FALSE;
+        }
+        if (self::IsPostcode($formattedPostcode)) {
+          $validationDetail[] = 'Postcode invalid';
+          $bValidAddress = FALSE;
+        }
+        if (!$bValidAddress) {
           $bValidDonorData = false;
           $validationMsg = "INVALID DONOR DETAILS : ADDRESS DATA ";
         }
+
         // Need to check if the amount is greater than 0.00 before submitting the batch
         $isValidAmount = $oDao->amount >= 0.01 ? true : false;
-        if ( !$isValidAmount ) {
+        if (!$isValidAmount) {
           $bValidDonorData = false;
           $validationMsg = "INVALID DONOR DETAILS : AMOUNT IS LESS THAN 0.01 ";
+          $validationDetail[] = "Amount: {$oDao->amount}";
         }
-      } else {
-        $validationMsg = "INVALID DONOR DETAILS : FIRST NAME OR LAST NAME MISSING ";
       }
 
       // Need to find a way to let the submitter know if the contribution has been knocked off
       // Can then allow the user to fix
-      // at the moment just stoppping invalid data from pushing through
-      if ( $bValidDonorData ) {
-        $aDonors[] = array( 'forename'        => $oDao->first_name
-        , 'surname'         => $oDao->last_name
-        , 'house_no'        => $aAddress['address']
-        , 'postcode'        => $formattedPostcode
-        , 'date'            => date('Y-m-d', strtotime( $oDao->created_date ) )
-        , 'gift_aid_amount' => $oDao->amount
-        );
+      // at the moment just stopping invalid data from pushing through
+      if ($bValidDonorData) {
+        $aDonors[] = [
+          'forename'        => $oDao->first_name,
+          'surname'         => $oDao->last_name,
+          'house_no'        => $aAddress['address'],
+          'postcode'        => $formattedPostcode,
+          'date'            => date('Y-m-d', strtotime($oDao->created_date)),
+          'gift_aid_amount' => $oDao->amount
+        ];
       } else {
         $rejections[] = self::logBadDonorRecord( $oDao->batch_id
           , $oDao->batch_name
@@ -349,6 +408,7 @@ EOD;
           , $aAddress['address']
           , $aAddress['postcode']
           , $validationMsg
+          , $validationDetail
         );
       }
     }
@@ -367,10 +427,14 @@ EOD;
     }
   }
 
-  private function build_claim_xml( $pBatchId, &$package, &$rejections ) {
+  /**
+   * @param int $pBatchId
+   * @param \XMLWriter $package
+   * @param array $rejections
+   */
+  private function build_claim_xml($pBatchId, &$package, &$rejections) {
     $cClaimOrgName         = $this->_Settings['CLAIMER_ORG_NAME'];
     $cClaimOrgHmrcref      = $this->_Settings['CHAR_ID'];
-    //    $cClaimOrgHmrcref      = $this->_Settings['CLAIMER_ORG_HMRC_REF'];
     $cRegulatorName        = $this->_Settings['CLAIMER_ORG_REGULATOR_NAME'];
     $cRegulatorNo          = $this->_Settings['CLAIMER_ORG_REGULATOR_NO'];
     $cConnectedCharities   = 'no';
@@ -394,9 +458,18 @@ EOD;
     $package->endElement(); # Claim
   }
 
-  public function giftAidSubmit( $pBatchId, &$rejections ) {
+  /**
+   * Build and send the XML for the gift-aid submission
+   *
+   * @param int $pBatchId
+   * @param array $rejections
+   * @param bool $send
+   *   If set to FALSE will not be submitted - set this for testing/validating data for submission
+   *
+   * @return bool
+   */
+  public function giftAidSubmit($pBatchId, &$rejections, $send = TRUE) {
     $cChardId              = $this->_Settings['CHAR_ID'];
-    //$cOrganisation         = 'HMRC';
     $cOrganisation         = 'IR';
     $cClientUri            = $this->_Settings['VENDOR_ID'];
     $cClientProduct        = 'VedaGiftAidSubmission';
@@ -417,14 +490,8 @@ EOD;
     $this->setMessageTransformation( 'XML'           );
     $this->addTargetOrganisation   ( $cOrganisation  );
 
-
-    $this->addMessageKey( 'CHARID'
-      , $cChardId
-    );
-    $this->addChannelRoute( $cClientUri
-      , $cClientProduct
-      , $cClientProductVersion
-    );
+    $this->addMessageKey('CHARID', $cChardId);
+    $this->addChannelRoute($cClientUri, $cClientProduct, $cClientProductVersion);
     $this->setIRmarkGeneration( true );
     // Build message body...
     $package = new XMLWriter();
@@ -461,17 +528,22 @@ EOD;
     $package->writeElement( 'Phone', $cAuthOffPhone );
     $package->endElement(); #AuthOfficial
     $package->writeElement( 'Declaration', $cDeclaration );
-    $this->build_claim_xml( $pBatchId, $package, $rejections );
+    $this->build_claim_xml($pBatchId, $package, $rejections);
     $package->endElement(); #R68
     $package->endElement(); #IRenvelope
 
     // Send the message and deal with the response...
-    $this->setMessageBody( $package );
+    $this->setMessageBody($package);
 
-    return $this->sendMessage();
+    if ($send) {
+      return $this->sendMessage();
+    }
+    else {
+      return FALSE;
+    }
   }
 
-  public function declarationResponsePoll( $p_correlation_id = null, $p_poll_url = null ) {
+  public function declarationResponsePoll($p_correlation_id = null, $p_poll_url = null) {
     if ($p_correlation_id === null) {
       $sCorrelationId = $this->getResponseCorrelationId();
     } else {
