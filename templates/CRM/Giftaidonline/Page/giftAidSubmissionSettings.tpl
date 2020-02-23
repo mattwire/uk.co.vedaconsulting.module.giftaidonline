@@ -21,7 +21,7 @@
           <td>{$giftAidSettings.value}</td>
           <td>{$giftAidSettings.description}</td>
           <td>
-            <a href="{crmURL p='civicrm/gift-aid-submission-settings-Form' q="sid=`$giftAidSettings.id`&sname=`$giftAidSettings.name`" h=0}">[Edit]</a>
+            <a href="{crmURL p='civicrm/admin/giftaid/submission-settings-Form' q="sid=`$giftAidSettings.id`&sname=`$giftAidSettings.name`" h=0}">[Edit]</a>
           </td>
         </tr>
       {/foreach}

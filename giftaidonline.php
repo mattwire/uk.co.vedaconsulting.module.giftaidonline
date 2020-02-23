@@ -1,5 +1,6 @@
 <?php
 
+use CRM_Giftaidonline_ExtensionUtil as E;
 require_once 'giftaidonline.civix.php';
 
 /**
@@ -76,6 +77,22 @@ function giftaidonline_civicrm_managed(&$entities) {
  * @param array $params
  */
 function giftaidonline_civicrm_navigationMenu(&$params) {
+  _giftaidonline_civix_insert_navigation_menu($params, 'Contributions', [
+    'label' => E::ts('Online Gift Aid Submission'),
+    'name' => 'giftaid_submission',
+    'url' => 'civicrm/giftaid/onlinesubmission',
+    'permission' => 'allow giftaid submission',
+    'operator' => 'OR',
+    'separator' => 0,
+  ]);
+  _giftaidonline_civix_insert_navigation_menu($params, 'Administer/CiviContribute/admin_giftaid', [
+    'label' => E::ts('Online Gift Aid Submission Settings'),
+    'name' => 'giftaid_submission_settings',
+    'url' => 'civicrm/admin/giftaid/submission-settings',
+    'permission' => 'administer CiviCRM',
+    'operator' => 'OR',
+    'separator' => 0,
+  ]);
   _giftaidonline_civix_navigationMenu($params);
 }
 

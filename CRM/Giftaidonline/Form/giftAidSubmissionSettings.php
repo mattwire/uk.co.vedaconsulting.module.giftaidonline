@@ -45,6 +45,6 @@ class CRM_Giftaidonline_Form_giftAidSubmissionSettings extends CRM_Core_Form {
     if ($buttonName === $this->getButtonName('upload')) {
       CRM_Giftaidonline_Page_giftAidSubmissionSettings::update_gift_aid_submission_setting($id, $name, $value);
     }
-    $session->replaceUserContext(CRM_Utils_System::url('civicrm/gift-aid-submission-settings'));
+    $session->replaceUserContext(CRM_Utils_System::url('civicrm/admin/giftaid/submission-settings'));
   }
 }
