@@ -23,28 +23,28 @@ function giftaidonline_civicrm_xmlMenu(&$files) {
  * Implementation of hook_civicrm_install
  */
 function giftaidonline_civicrm_install() {
-  return _giftaidonline_civix_civicrm_install();
+  _giftaidonline_civix_civicrm_install();
 }
 
 /**
  * Implementation of hook_civicrm_uninstall
  */
 function giftaidonline_civicrm_uninstall() {
-  return _giftaidonline_civix_civicrm_uninstall();
+  _giftaidonline_civix_civicrm_uninstall();
 }
 
 /**
  * Implementation of hook_civicrm_enable
  */
 function giftaidonline_civicrm_enable() {
-  return _giftaidonline_civix_civicrm_enable();
+  _giftaidonline_civix_civicrm_enable();
 }
 
 /**
  * Implementation of hook_civicrm_disable
  */
 function giftaidonline_civicrm_disable() {
-  return _giftaidonline_civix_civicrm_disable();
+  _giftaidonline_civix_civicrm_disable();
 }
 
 /**
@@ -67,22 +67,22 @@ function giftaidonline_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
  * is installed, disabled, uninstalled.
  */
 function giftaidonline_civicrm_managed(&$entities) {
-  return _giftaidonline_civix_civicrm_managed($entities);
+  _giftaidonline_civix_civicrm_managed($entities);
 }
 
 /**
  *Implementation of hook_civicrm_navigationMenu
  * @param array $params
  */
-function giftaidonline_civicrm_navigationMenu( &$params ) {
-  return _giftaidonline_civicrm_navigationMenu( $params );
+function giftaidonline_civicrm_navigationMenu(&$params) {
+  _giftaidonline_civix_navigationMenu($params);
 }
 
 /**
  *Implementation of hook_civicrm_permission
  * @param array $permissions
  */
-function giftaidonline_civicrm_permission( &$permissions ) {
+function giftaidonline_civicrm_permission(&$permissions) {
   $prefix = ts('Giftaidonline') . ': '; // name of extension or module
   $permissions['allow giftaid submission'] = $prefix . ts('allow giftaid submission');
 }
