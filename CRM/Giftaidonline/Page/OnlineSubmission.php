@@ -385,13 +385,16 @@ EOF;
    * @return array|mixed
    * @throws \Exception
    */
-  public function process_batch($p_batch_id, $task = NULL, $send = TRUE) {
+  public function process_batch($p_batch_id, $task = NULL, $isValidate = FALSE) {
     $oHmrcGiftAid = new HmrcGiftAid();
     $rejections = [];
     $submissionId = '';
     if (!$this->is_submitted($p_batch_id)) {
       // imacdonal Patch
-      $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejections, $send);
+      $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejections, $isValidate);
+      if ($isValidate) {
+        return $rejections;
+      }
 
       if ($oHmrcGiftAid->responseHasErrors() === false) {
         /**
@@ -516,7 +519,7 @@ EOF;
       $cLink = $oDao->created_date."<br />";
       if (!$this->is_submitted($oDao->batch_id)) {
         $submitUrl  = CRM_Utils_System::url( 'civicrm/onlinesubmission', "id=$oDao->batch_id");
-        $validateUrl = CRM_Utils_System::url( 'civicrm/onlinesubmission', "id=$oDao->batch_id&send=0");
+        $validateUrl = CRM_Utils_System::url( 'civicrm/onlinesubmission', "id=$oDao->batch_id&validate=1");
         $cLink .= "<a href='{$validateUrl}'>" . E::ts('Validate') . "</a><br />";
         $cLink .= "<a href='{$submitUrl}'>" . E::ts('Submit now') . "</a>";
       } else {
@@ -611,14 +614,21 @@ EOF;
     CRM_Utils_System::setTitle(ts('Online Submission'));
     $iBatchId = CRM_Utils_Request::retrieve('id', 'Positive');
     $task = CRM_Utils_Request::retrieve('task', 'String');
-    $send = CRM_Utils_Request::retrieveValue('send', 'Boolean', TRUE);
+    $isValidate = CRM_Utils_Request::retrieveValue('validate', 'Boolean', FALSE);
     if (empty($iBatchId)) {
       $this->assign('batches', $this->get_all_giftaid_batch());
       $sTask = 'VIEW_BATCH';
     }
     else {
-      $this->assign('submission', $this->process_batch($iBatchId, $task, $send));
-      $sTask = 'VIEW_SUBMISSION';
+      $processed = $this->process_batch($iBatchId, $task, $isValidate);
+      $this->assign('submission', $processed);
+      if ($isValidate) {
+        $sTask = 'VIEW_INVALID';
+        $this->assign('tableHeaders', array_keys(reset($processed)));
+      }
+      else {
+        $sTask = 'VIEW_SUBMISSION';
+      }
     }
     $this->assign('task', $sTask);
 

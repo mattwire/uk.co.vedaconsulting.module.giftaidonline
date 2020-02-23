@@ -65,7 +65,7 @@
   <div>
     {$poll_message}
   </div>
-{else}
+{elseif $task eq 'VIEW_SUBMISSION'}
   <form id="submission_frm">
     <div class="crm-block crm-form-block">
       <table id="submission_table">
@@ -107,6 +107,42 @@
               }
       );
     } );
+  </script>
+{/literal}
+{elseif $task eq 'VIEW_INVALID'}
+  <table id="invalid_table">
+    <thead>
+    <tr>
+    {foreach from=$tableHeaders item=header}
+      <th>{$header}</th>
+    {/foreach}
+    </tr>
+    </thead>
+    <tbody>
+    {foreach from=$submission item=rejectrow}
+      <tr>
+      {foreach from=$rejectrow item=field}
+        <td>{$field}</td>
+      {/foreach}
+      </tr>
+    {/foreach}
+    </tbody>
+  </table>
+{literal}
+  <script type="text/javascript">
+    CRM.$(document).ready(function() {
+      CRM.$('#batch_table').dataTable( {
+                "aoColumns": [
+                  { "sWidth": "30%" },
+                  { "sWidth": "15%", "sType": "date" },
+                  { "sWidth": "10%", "sType": "numeric" },
+                  { "sWidth": "10%", "sType": "numeric" },
+                  { "sWidth": "20%" },
+                  { "sWidth": "15%" }
+                ]
+              }
+      );
+    });
   </script>
 {/literal}
 {/if}

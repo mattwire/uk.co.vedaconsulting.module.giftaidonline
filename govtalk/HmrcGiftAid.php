@@ -313,7 +313,7 @@ EOD;
    * @param \XMLWriter $package
    * @param array $rejections
    */
-  private function build_giftaid_donors_xml($pBatchId, &$package, &$rejections) {
+  private function build_giftaid_donors_xml($pBatchId, &$package, &$rejections, $isValidate = FALSE) {
     $cDonorSelect = <<<EOD
       SELECT batch.id                                                  AS batch_id
       ,      batch.title                                               AS batch_name
@@ -396,20 +396,40 @@ EOD;
           'gift_aid_amount' => $oDao->amount
         ];
       } else {
-        $rejections[] = self::logBadDonorRecord( $oDao->batch_id
-          , $oDao->batch_name
-          , $oDao->created_date
-          , $oDao->contribution_id
-          , $oDao->contact_id
-          , $oDao->first_name
-          , $oDao->last_name
-          , $oDao->amount
-          , $oDao->gift_aid_amount
-          , $aAddress['address']
-          , $aAddress['postcode']
-          , $validationMsg
-          , $validationDetail
-        );
+        if ($isValidate) {
+          $validationDetailString = implode('; ', $validationDetail);
+          $rejections[] = [
+            'batch_id' => $oDao->batch_id,
+            'batch_name' => $oDao->batch_name,
+            'created_date' => $oDao->created_date,
+            'contribution_id' => $oDao->contribution_id,
+            'contact_id' => $oDao->contact_id,
+            'first_name' => $oDao->first_name,
+            'last_name' => $oDao->last_name,
+            'amount' => $oDao->amount,
+            'gift_aid_amount' => $oDao->gift_aid_amount,
+            'address' => $aAddress['address'],
+            'postcode' => $aAddress['postcode'],
+            'message' => $validationMsg,
+            'detail' => $validationDetailString
+          ];
+        }
+        else {
+          $rejections[] = self::logBadDonorRecord($oDao->batch_id
+            , $oDao->batch_name
+            , $oDao->created_date
+            , $oDao->contribution_id
+            , $oDao->contact_id
+            , $oDao->first_name
+            , $oDao->last_name
+            , $oDao->amount
+            , $oDao->gift_aid_amount
+            , $aAddress['address']
+            , $aAddress['postcode']
+            , $validationMsg
+            , $validationDetail
+          );
+        }
       }
     }
 
@@ -432,7 +452,7 @@ EOD;
    * @param \XMLWriter $package
    * @param array $rejections
    */
-  private function build_claim_xml($pBatchId, &$package, &$rejections) {
+  private function build_claim_xml($pBatchId, &$package, &$rejections, $isValidate = FALSE) {
     $cClaimOrgName         = $this->_Settings['CLAIMER_ORG_NAME'];
     $cClaimOrgHmrcref      = $this->_Settings['CHAR_ID'];
     $cRegulatorName        = $this->_Settings['CLAIMER_ORG_REGULATOR_NAME'];
@@ -448,7 +468,7 @@ EOD;
     $package->writeElement( 'RegNo'  , $cRegulatorNo     );
     $package->endElement(); # Regulator
     $package->startElement(   'Repayment'                  );
-    $this->build_giftaid_donors_xml( $pBatchId, $package, $rejections );
+    $this->build_giftaid_donors_xml($pBatchId, $package, $rejections, $isValidate);
     $package->writeElement( 'EarliestGAdate'  , '2012-01-01' );
     $package->endElement(); # Repayment
     $package->startElement(   'GASDS'                                      );
@@ -468,7 +488,7 @@ EOD;
    *
    * @return bool
    */
-  public function giftAidSubmit($pBatchId, &$rejections, $send = TRUE) {
+  public function giftAidSubmit($pBatchId, &$rejections, $isValidate = FALSE) {
     $cChardId              = $this->_Settings['CHAR_ID'];
     $cOrganisation         = 'IR';
     $cClientUri            = $this->_Settings['VENDOR_ID'];
@@ -528,14 +548,14 @@ EOD;
     $package->writeElement( 'Phone', $cAuthOffPhone );
     $package->endElement(); #AuthOfficial
     $package->writeElement( 'Declaration', $cDeclaration );
-    $this->build_claim_xml($pBatchId, $package, $rejections);
+    $this->build_claim_xml($pBatchId, $package, $rejections, $isValidate);
     $package->endElement(); #R68
     $package->endElement(); #IRenvelope
 
     // Send the message and deal with the response...
     $this->setMessageBody($package);
 
-    if ($send) {
+    if (!$isValidate) {
       return $this->sendMessage();
     }
     else {
