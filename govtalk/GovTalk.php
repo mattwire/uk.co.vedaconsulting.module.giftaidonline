@@ -4,7 +4,7 @@
 #  GovTalk.php
 #
 #  Created by Jonathon Wardman on 14-07-2009.
-#  Copyright 2009, Fubra Limited. All rights reserved.
+#  Copyright 2009 - 2011, Fubra Limited. All rights reserved.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
  * departments. Generates valid GovTalk envelopes for agreed version 2.0.
  *
  * @author Jonathon Wardman
- * @copyright 2009, Fubra Limited
+ * @copyright 2009 - 2011, Fubra Limited
  * @licence http://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License
  */
 class GovTalk {
@@ -170,6 +170,23 @@ class GovTalk {
 	 */
 	protected $_fullResponseObject;
 
+ /* Error handling variables. */
+
+	/**
+	 * An array containing all reported errors.
+	 *
+	 * The error array is stored and returned in the following format, one
+	 * one element for every error which has been reported:
+	 *   time => The unix timestamp (with microseconds) that this error was generated.
+	 *   code => A short error code. Defined by the function adding the error and not globally.
+	 *   message => A more descriptive error message. Again defined by the function adding the error, but hopefully more helpful. (Optional.)
+	 *   function => The name of the calling function. (Optional.)
+	 *
+	 * @since 0.4
+	 * @var array
+	 */
+	protected $_errorArray = array();
+
  /* System / internal variables. */
 
 	/**
@@ -205,6 +222,62 @@ class GovTalk {
 
  /* Public methods. */
 
+ /* Error handling funtions. */
+
+	/**
+	 * Returns the number of errors which have been logged in the error array
+	 * since this instance was initialised, or the error array was last reset.
+	 *
+	 * @since 0.4
+	 * @see logError(), clearErrors(), getErrors()
+	 * @return int The number of errors since the error array was last reset.
+	 */
+	public function errorCount() {
+
+		return count($this->_errorArray);
+
+	}
+
+	/**
+	 * Returns the full error array.
+	 *
+	 * @since 0.4
+	 * @see getLastError(), $_errorArray
+	 * @return array The complete error array.
+	 */
+	public function getErrors() {
+
+		return $this->_errorArray();
+
+	}
+
+	/**
+	 * Returns the last error pushed onto the error array.
+	 *
+	 * @since 0.4
+	 * @see getErrors(), $_errorArray
+	 * @return array The last element pushed onto the error array.
+	 */
+	public function getLastError() {
+
+		return end($this->_errorArray);
+
+	}
+
+	/**
+	 * Clears all errors out of the error array.
+	 *
+	 * @since 0.4
+	 * @see $_errorArray
+	 * @return boolean This function always returns true.
+	 */
+	public function clearErrors() {
+
+		$this->_errorArray = array();
+		return true;
+
+	}
+
  /* Logical / operational / conditional methods. */
 
 	/**
@@ -214,6 +287,7 @@ class GovTalk {
 	 * @return boolean True if errors are present, false if not.
 	 */
 	public function responseHasErrors() {
+
 		if (isset($this->_fullResponseObject)) {
 			if (isset($this->_fullResponseObject->GovTalkDetails->GovTalkErrors)) {
 				return true;
@@ -223,6 +297,7 @@ class GovTalk {
 		} else {
 			return false;
 		}
+
 	}
 
  /* System / internal get methods. */
@@ -281,7 +356,7 @@ class GovTalk {
 	public function getResponseQualifier() {
 
 		if (isset($this->_fullResponseObject)) {
-			return (string) $this->_fullResponseObject->Header->MessageDetails->Qualifier;
+			return (string) $this->_fullResponseObject->Header->MessageDetails->Qualifer;
 		} else {
 			return false;
 		}
@@ -312,6 +387,7 @@ class GovTalk {
 	 * @return integer The Gateway timestamp as a unix timestamp, or false if this isn't set.
 	 */
 	public function getResponseCorrelationId() {
+
 		if (isset($this->_fullResponseObject)) {
 			if (isset($this->_fullResponseObject->Header->MessageDetails->CorrelationID)) {
 				return (string) $this->_fullResponseObject->Header->MessageDetails->CorrelationID;
@@ -348,6 +424,7 @@ class GovTalk {
 		} else {
 			return false;
 		}
+
 	}
 
 	/**
@@ -377,6 +454,7 @@ class GovTalk {
 		} else {
 			return false;
 		}
+
 	}
 
 	/**
@@ -386,7 +464,7 @@ class GovTalk {
 	 * @return mixed The message body as a SimpleXML object, or false if this isn't set.
 	 */
 	public function getResponseBody() {
-
+	
 		if (isset($this->_fullResponseObject)) {
 			return $this->_fullResponseObject->Body;
 		} else {
@@ -395,25 +473,8 @@ class GovTalk {
 
 	}
 
-	/**
-	 * Get the successful response text message.
-	 *
-	 * @return the text successful messages.
-	 */
-	public function getResponseSuccessfullMessage() {
-    $oBody    = $this->getResponseBody();
-    $sMessage = null;
-		if ( $oBody ) {
-			if ( isset( $oBody->SuccessResponse->IRmarkReceipt->Message ) ) {
-				$sMessage = $oBody->SuccessResponse->IRmarkReceipt->Message;
-			}
-		}
-
-    return $sMessage;
-	}
-
  /* General envelope related set methods. */
-
+ 
 	/**
 	 * Change the URL used to talk to the Government Gateway from that set during
 	 * the instance instantiation. Very handy when required to poll a different
@@ -422,9 +483,9 @@ class GovTalk {
 	 * @param string $govTalkServer GovTalk server URL.
 	 */
 	public function setGovTalkServer($govTalkServer) {
-
+	
 		$this->_govTalkServer = $govTalkServer;
-
+	
 	}
 
 	/**
@@ -451,7 +512,7 @@ class GovTalk {
 		}
 
 	}
-
+	
 	/**
 	 * Switch off (or on) schema validation of outgoing and incoming XML data
 	 * against the additional XML schema.
@@ -460,14 +521,14 @@ class GovTalk {
 	 * @return boolean True if the validation is set, false if setting the validation failed.
 	 */
 	public function setSchemaValidation($validate) {
-
+	
 		if (is_bool($validate)) {
 			$this->_schemaValidation = $validate;
 			return true;
 		} else {
 			return false;
 		}
-
+	
 	}
 
 	/**
@@ -706,9 +767,10 @@ class GovTalk {
 	 * @param string $softwareVersion The version number of the software generating this route entry.
 	 * @param array $id An array of IDs (themselves array of 'type' and 'value') to add as array elements.
 	 * @param string $timestamp A timestamp representing the time this route processed the message (xsd:dateTime format).
+	 * @param boolean $force If true the route already exists check is not carried out and the target is added regardless of duplicates. (Defaults to false.)
 	 * @return boolean True if the route is valid and added, false if it's not valid (and therefore not added).
 	 */
-	public function addChannelRoute($uri, $softwareName = null, $softwareVersion = null, array $id = null, $timestamp = null) {
+	public function addChannelRoute($uri, $softwareName = null, $softwareVersion = null, array $id = null, $timestamp = null, $force = false) {
 
 		if (is_string($uri)) {
 			$newRoute = array('uri' => $uri);
@@ -730,8 +792,22 @@ class GovTalk {
 			} else {
 				$newRoute['timestamp'] = date('c');
 			}
-			$this->_messageChannelRouting[] = $newRoute;
-			return true;
+			if ($force === false) {
+				$matchedChannel = false;
+				foreach ($this->_messageChannelRouting AS $channelRoute) {
+					if (($channelRoute['product'] == $newRoute['product']) && ($channelRoute['version'] == $newRoute['version'])) {
+						$matchedChannel = true;
+						break;
+					}
+				}
+				if ($matchedChannel == false) {
+					$this->_messageChannelRouting[] = $newRoute;
+				}
+				return true;
+			} else {
+				$this->_messageChannelRouting[] = $newRoute;
+				return true;
+			}
 		} else {
 			return false;
 		}
@@ -811,12 +887,18 @@ class GovTalk {
 	 * element.
 	 *
 	 * @param string $targetOrganisation The organisation to be added.
+	 * @param boolean $force If true the target already exists check is not carried out and the target is added regardless of duplicates. (Defaults to false.)
 	 * @return boolean True if the key is valid and added, false if it's not valid (and therefore not added).
 	 */
-	public function addTargetOrganisation($targetOrganisation) {
+	public function addTargetOrganisation($targetOrganisation, $force = false) {
 
 		if (($targetOrganisation != '') && (strlen($targetOrganisation) < 65)) {
-			$this->_messageTargetDetails[] = $targetOrganisation;
+			if (($force === false) && in_array($targetOrganisation, $this->_messageTargetDetails)) {
+				return true;
+			} else {
+				$this->_messageTargetDetails[] = $targetOrganisation;
+				return true;
+			}
 		} else {
 			return false;
 		}
@@ -861,7 +943,7 @@ class GovTalk {
 		return true;
 
 	}
-
+	
  /* Specific generic Gateway requests. */
 
 	/**
@@ -875,7 +957,7 @@ class GovTalk {
 	 * @return boolean True if message was successfully deleted from the gateway, false otherwise.
 	 */
 	public function sendDeleteRequest($correlationId = null, $messageClass = null) {
-
+	
 		if (($correlationId !== null) && ($messageClass !== null)) {
 			if (preg_match('/[0-9A-F]{0,32}/', $correlationId)) {
 				$correlationId = $correlationId;
@@ -890,15 +972,54 @@ class GovTalk {
 				return false;
 			}
 		}
-
+		
 		$this->setMessageClass($messageClass);
 		$this->setMessageQualifier('request');
 		$this->setMessageFunction('delete');
 		$this->setMessageCorrelationId($correlationId);
 		$this->setMessageBody('');
-
+		
 		if ($this->sendMessage() && ($this->responseHasErrors() === false)) {
 			return true;
+		} else {
+			return false;
+		}
+	
+	}
+	
+	/**
+	 * Submits and processes a generic list request. By default the request
+	 * refers to the last stored message class, but this behaviour can be over-
+	 * ridden by providing a different class to the method.
+	 *
+	 * @param string $messageClass The class of request to list
+	 */
+	public function sendListRequest($messageClass = null) {
+
+		if ($messageClass === null) {
+			$messageClass = $this->_messageClass;
+		}
+		
+		$this->setMessageClass($messageClass);
+		$this->setMessageQualifier('request');
+		$this->setMessageFunction('list');
+		$this->setMessageCorrelationId('');
+		$this->setMessageBody('');
+
+		if ($this->sendMessage() && ($this->responseHasErrors() === false)) {
+			if ((string) $this->_fullResponseObject->Header->MessageDetails->Qualifier == 'response') {
+				$returnArray = array();
+				foreach ($this->_fullResponseObject->Body->StatusReport->StatusRecord AS $reportNode) {
+					preg_match('#(\d{2})/(\d{2})/(\d{4}) (\d{2}):(\d{2}):(\d{2})#', $reportNode->TimeStamp, $timeChunks);
+					$returnArray[] = array('timestamp' => mktime($timeChunks[4], $timeChunks[5], $timeChunks[6], $timeChunks[2], $timeChunks[1], $timeChunks[3]),
+					                       'correlation' => (string) $reportNode->CorrelationID,
+					                       'transaction' => (string) $reportNode->TransactionID,
+					                       'status' => (string) $reportNode->Status);
+				}
+				return $returnArray;
+			} else {
+				return false;
+			}
 		} else {
 			return false;
 		}
@@ -920,18 +1041,12 @@ class GovTalk {
 	 * @param mixed
 	 * @return boolean True if the message was successfully submitted to the Gateway and a response was received, false if not.
 	 */
-	public function sendMessage( $p_request_string = null ) {
-		if ( !empty( $p_request_string ) ) {
-      $this->_fullRequestString = $p_request_string;
-    } else {
-      $this->_fullRequestString = $this->_packageGovTalkEnvelope();
-    }
-    if ( $this->_fullRequestString ) {
+	public function sendMessage() {
+	
+		if ($this->_fullRequestString = $this->_packageGovTalkEnvelope()) {
 			$this->_fullResponseString = $this->_fullResponseObject = null;
-
-      if (function_exists('curl_init')) {
+		   if (function_exists('curl_init')) {
 				$curlHandle = curl_init($this->_govTalkServer);
-
 				curl_setopt($curlHandle, CURLOPT_HTTPHEADER, array('Content-Type: text/xml'));
 				curl_setopt($curlHandle, CURLOPT_RETURNTRANSFER, 1);
 				curl_setopt($curlHandle, CURLOPT_SSL_VERIFYPEER, false);
@@ -948,18 +1063,20 @@ class GovTalk {
 					return false;
 				}
 			}
-
 			if ($gatewayResponse !== false) {
 				$this->_fullResponseString = $gatewayResponse;
 				$validXMLResponse = false;
 				if ($this->_messageTransformation == 'XML') {
 					if (isset($this->_additionalXsiSchemaLocation) && ($this->_schemaValidation == true)) {
-						if (file_exists($this->_additionalXsiSchemaLocation)) {
+						$xsiSchemaHeaders = @get_headers($this->_additionalXsiSchemaLocation);
+						if ($xsiSchemaHeaders[0] != 'HTTP/1.1 404 Not Found') {
 							$validate = new DOMDocument();
 							$validate->loadXML($this->_fullResponseString);
 							if ($validate->schemaValidate($this->_additionalXsiSchemaLocation)) {
 								$validXMLResponse = true;
 							}
+						} else {
+							return false;
 						}
 					} else {
 						$validXMLResponse = true;
@@ -997,7 +1114,7 @@ class GovTalk {
 	   return false;
 
 	}
-
+	
 	/**
 	 * This method is designed to be over-ridden by extending classes which
 	 * require the final XML package to be digested (and, perhaps, altered) in
@@ -1011,8 +1128,28 @@ class GovTalk {
 	 * @return string The new (or unaltered) package after application of the digest.
 	 */
 	protected function packageDigest($package) {
-
+	
 		return $package;
+	
+	}
+
+	/**
+	 * Adds a new error to the end of the error array.
+	 *
+	 * @since 0.4
+	 * @see $_errorArray
+	 * @param string $errorCode An error code identifying this error being logged. While not globally unique, care should be taken to make this useful.
+	 * @param string $errorMessage An error message in plain text. This might be displayed to the user by applications, so should be something pretty descriptive. (Optional.)
+	 * @param string $function The function which generated this error. While this is optional, and might not be very helpful (depending on the error), it's easy to add with __FUNCTION__. (Optional.)
+	 * @return boolean This function always returns true.
+	 */
+	protected function _logError($errorCode, $errorMessage = null, $function = null) {
+
+		$this->_errorArray[] = array('time' => microtime(true),
+		                             'code' => $errorCode,
+		                             'message' => $errorMessage,
+		                             'function' => $function);
+		return true;
 
 	}
 
@@ -1043,7 +1180,7 @@ class GovTalk {
 							$xsiSchemaLocation .= ' '.$this->_additionalXsiSchemaLocation;
 						}
 						$package->writeAttribute('xmlns', 'http://www.govtalk.gov.uk/CM/envelope');
-//						$package->writeAttributeNS('xsi', 'schemaLocation', 'http://www.w3.org/2001/XMLSchema-instance', $xsiSchemaLocation);
+						$package->writeAttributeNS('xsi', 'schemaLocation', 'http://www.w3.org/2001/XMLSchema-instance', $xsiSchemaLocation);
 							$package->writeElement('EnvelopeVersion', '2.0');
 
 	 // Header...
@@ -1056,19 +1193,14 @@ class GovTalk {
 									if ($this->_messageFunction !== null) {
 										$package->writeElement('Function', $this->_messageFunction);
 									}
-//									$package->writeElement('TransactionID', $this->_transactionId);
+									$package->writeElement('TransactionID', $this->_transactionId);
 									if ($this->_messageCorrelationId !== null) {
 										$package->writeElement('CorrelationID', $this->_messageCorrelationId);
-									}else {
-										$package->writeElement('CorrelationID', null );
-                                    }
-									//if ($this->_messageTransformation !== 'XML') {
+									}
+									if ($this->_messageTransformation !== 'XML') {
 										$package->writeElement('Transformation', $this->_messageTransformation);
-									//}
+									}
 									$package->writeElement('GatewayTest', $this->_govTalkTest);
-                  if ( $this->_govTalkTest == 1 ) {
- 									$package->writeElement('GatewayTimestamp', '' );
-                  }
 								$package->endElement(); # MessageDetails
 
 	 // Sender details...
@@ -1082,7 +1214,6 @@ class GovTalk {
 											case 'alternative':
 												if ($authenticationArray = $this->generateAlternativeAuthentication($this->_transactionId)) {
 													$package->writeElement('Method', $authenticationArray['method']);
-                          $package->writeElement('Role', 'principal');
 													$package->writeElement('Value', $authenticationArray['token']);
 												} else {
 													return false;
@@ -1090,7 +1221,6 @@ class GovTalk {
 											break;
 											case 'clear':
 												$package->writeElement('Method', 'clear');
-												$package->writeElement('Role', 'principal');
 												$package->writeElement('Value', $this->_govTalkPassword);
 											break;
 										}
@@ -1117,26 +1247,23 @@ class GovTalk {
 										$package->endElement(); # Key
 									}
 									$package->endElement(); # Keys
-								} else {
-                  $package->startElement('Keys');
-                  $package->endElement();
-                }
+								}
 
 	 // Target details...
-//								if (count($this->_messageTargetDetails) > 0) {
-//									$package->startElement('TargetDetails');
-//									foreach ($this->_messageTargetDetails AS $targetOrganisation) {
-//										$package->writeElement('Organisation', $targetOrganisation);
-//									}
-//									$package->endElement(); # TargetDetails
-//								}
+								if (count($this->_messageTargetDetails) > 0) {
+									$package->startElement('TargetDetails');
+									foreach ($this->_messageTargetDetails AS $targetOrganisation) {
+										$package->writeElement('Organisation', $targetOrganisation);
+									}
+									$package->endElement(); # TargetDetails
+								}
 
 	 // Channel routing...
 								$channelRouteArray = $this->_messageChannelRouting;
-//								$channelRouteArray[] = array('uri' => 'http://code.google.com/p/php-govtalk/',
-//								                             'product' => 'php-govtalk',
-//								                             'version' => '1.0',
-//								                             'timestamp' => date('c'));
+								$channelRouteArray[] = array('uri' => 'http://code.google.com/p/php-govtalk/',
+								                             'product' => 'php-govtalk',
+								                             'version' => '1.0',
+								                             'timestamp' => date('c'));
 								foreach ($channelRouteArray AS $channelRoute) {
 									$package->startElement('ChannelRouting');
 										$package->startElement('Channel');
@@ -1164,7 +1291,7 @@ class GovTalk {
 
 	 // Body...
 							$package->startElement('Body');
-							if ( !empty(  $this->_messageBody ) && is_string( $this->_messageBody ) ) {
+							if (is_string($this->_messageBody)) {
 								$package->writeRaw("\n".trim($this->_messageBody)."\n");
 							} else if (is_a($this->_messageBody, 'XMLWriter')) {
 								$package->writeRaw("\n".trim($this->_messageBody->outputMemory())."\n");
@@ -1175,7 +1302,7 @@ class GovTalk {
 
 	 // Flush the buffer, run any extension-specific digests, validate the schema
 	 // and return the XML...
-						$xmlPackage = $this->packageDigest( $package->flush() );
+						$xmlPackage = $this->packageDigest($package->flush());
 						$validXMLRequest = true;
 						if (isset($this->_additionalXsiSchemaLocation) && ($this->_schemaValidation == true)) {
 							$validation = new DOMDocument();
@@ -1189,7 +1316,7 @@ class GovTalk {
 						} else {
 							return false;
 						}
-
+						
 					} else {
 						return false;
 					}
@@ -1199,6 +1326,48 @@ class GovTalk {
 			} else {
 				return false;
 			}
+		} else {
+			return false;
+		}
+
+	}
+	
+	/**
+	 * Packages the given array into an XMLWriter object where each element takes
+	 * its name from the array index, and its value from the array value.  In the
+	 * case of nested arrays each level is added below the previous element (as
+	 * you would expect).  Where an array has numeric indices each element takes
+	 * its name from the parent array.
+	 *
+	 * @param mixed $informationArray The information to be turned into an XMLWriter object.
+	 * @param string $parentElement The name of the parent element, to be applied if the current $informationArray is numerically indexed.
+	 * @return XMLWriter An XMLWriter object representing the given array in XML.
+	 */
+	protected function _xmlPackageArray($informationArray, $parentElement = null) {
+
+		if (is_array($informationArray)) {
+			$package = new XMLWriter();
+			$package->openMemory();
+			$package->setIndent(true);
+			foreach ($informationArray AS $elementKey => $elementValue) {
+				if (is_array($elementValue)) {
+					$packagedArray = $this->_xmlPackageArray($elementValue, $elementKey);
+					reset($elementValue);
+					if (!is_int(key($elementValue))) {
+						$package->startElement($elementKey);
+							$package->writeRaw("\n".trim($packagedArray->outputMemory())."\n");
+						$package->endElement();
+					} else {
+						$package->writeRaw("\n".trim($packagedArray->outputMemory())."\n");
+					}
+				} else {
+					if (is_int($elementKey)) {
+						$elementKey = $parentElement;
+					}
+					$package->writeElement($elementKey, $elementValue);
+				}
+			}
+			return $package;
 		} else {
 			return false;
 		}
@@ -1217,8 +1386,11 @@ class GovTalk {
 	 * @return boolean Always returns true.
 	 */
 	private function _generateTransactionId() {
-		$this->_transactionId = str_pad( str_replace( '.', '', microtime( true ) ), 32 , '0' );
+	
+		list($usec, $sec) = explode(' ', microtime());
+		$this->_transactionId = $sec.str_replace('0.', '', $usec);
 		return true;
+
 	}
 
 }

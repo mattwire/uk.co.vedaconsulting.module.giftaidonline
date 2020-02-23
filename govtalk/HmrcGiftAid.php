@@ -31,17 +31,7 @@
 require_once 'CRM/Core/Page.php';
 require_once ( dirname(__FILE__) . '/GiftAidGovTalk.php' );
 
-class HmrcGiftAid extends GiftAidGovTalk {
-
- /* General IRenvelope related variables. */
-
-	/**
-	 * Details of the agent sending the return declaration.
-	 *
-	 * @var string
-	 */
-	private $_agentDetails = array();
-
+class HmrcGiftAid extends Hmrc {
 
 	/**
 	 * Specific Settings required for call HRMC Webservices.
@@ -49,15 +39,6 @@ class HmrcGiftAid extends GiftAidGovTalk {
 	 * @var array
 	 */
   private $_Settings    = array();
-
- /* System / internal variables. */
-
-	/**
-	 * Flag indicating if the IRmark should be generated for outgoing XML.
-	 *
-	 * @var boolean
-	 */
-	private $_generateIRmark = true;
 
  /* Magic methods. */
 
@@ -102,72 +83,23 @@ EOD;
     }
 
 		$this->setMessageAuthentication( 'clear' );
-//		$this->addChannelRoute( 'http://www.vedaconsulting.co.uk/uk-hrmc-gift-aid-online-submission/'
-//                          , 'Veda Consulting HMRC Gift Aid Online Submission extension'
-//                          , '0.1'
-//                          );
 	}
+
+  /**
+   * Sets the message CorrelationID for use in MessageDetails header.
+   *
+   * @param string $messageCorrelationId The correlation ID to set.
+   * @return boolean True if the CorrelationID is valid and set, false if it's invalid (and therefore not set).
+   * @see function getResponseCorrelationId
+   */
+  public function setMessageCorrelationId( $messageCorrelationId = null ) {
+    if ( empty( $messageCorrelationId ) ) {
+      return true;
+    }
+    return parent::setMessageCorrelationId( $messageCorrelationId);
+  }
 
  /* Public methods. */
-
-	/**
-	 * Turns the IRmark generator on or off (by default the IRmark generator is
-	 * turned off). When it's switched off no IRmark element will be sent with
-	 * requests to HMRC.
-	 *
-	 * @param boolean $flag True to turn on IRmark generator, false to turn it off.
-	 */
-	public function setIRmarkGeneration($flag) {
-
-		if (is_bool($flag)) {
-			$this->_generateIRmark = $flag;
-		} else {
-			return false;
-		}
-
-	}
-
-	/**
-	 * Sets details about the agent submitting the declaration.
-	 *
-	 * The agent company's address should be specified in the following format:
-	 *   line => Array, each element containing a single line information.
-	 *   postcode => The agent company's postcode.
-	 *   country => The agent company's country. Defaults to England.
-	 *
-	 * The agent company's primary contact should be specified as follows:
-	 *   name => Array, format as follows:
-	 *     title => Contact's title (Mr, Mrs, etc.)
-	 *     forename => Contact's forename.
-	 *     surname => Contact's surname.
-	 *   email => Contact's email address (optional).
-	 *   telephone => Contact's telephone number (optional).
-	 *   fax => Contact's fax number (optional).
-	 *
-	 * @param string $company The agent company's name.
-	 * @param array $address The agent company's address in the format specified above.
-	 * @param array $contact The agent company's key contact in the format specified above (optional, may be skipped with a null value).
-	 * @param string $reference An identifier for the agent's own reference (optional).
-	 */
-	public function setAgentDetails($company, array $address, array $contact = null, $reference = null) {
-
-		if (preg_match('/[A-Za-z0-9 &\'\(\)\*,\-\.\/]*/', $company)) {
-			$this->_agentDetails['company'] = $company;
-			$this->_agentDetails['address'] = $address;
-			if (!isset($this->_agentDetails['address']['country'])) {
-				$this->_agentDetails['address']['country'] = 'England';
-			}
-			if ($contact !== null) {
-				$this->_agentDetails['contact'] = $contact;
-			}
-			if (($reference !== null) && preg_match('/[A-Za-z0-9 &\'\(\)\*,\-\.\/]*/', $reference)) {
-				$this->_agentDetails['reference'] = $reference;
-			}
-		} else {
-			return false;
-		}
-
-	}
 
   private function getHouseNo( $p_address_line ) {
     /*
@@ -300,9 +232,9 @@ SQL;
       , postcode: $postcode
       , message: $validation_msg
 EOF;
-    
+
     CRM_Core_Error::debug_log_message( "Invalid Donor Record. Details ...\n$sMessage", TRUE );
-    
+
     $sSql =<<<EOF
             INSERT INTO civicrm_gift_aid_rejected_contributions(
               batch_id
@@ -322,9 +254,9 @@ EOF;
     $oDao = CRM_Core_DAO::executeQuery( $sSql, $aQueryParam );
     if ( is_a( $oDao, 'DB_Error' ) ) {
       CRM_Core_Error::fatal( 'Trying to create a new Submission record failed.' );
-    }    
+    }
     $rejectionId = CRM_Core_DAO::singleValueQuery('SELECT LAST_INSERT_ID()');
-    
+
     // Remove the contribution from the Batch
     $cEntityDelete = <<<EOD
       DELETE FROM civicrm_entity_batch
@@ -334,12 +266,12 @@ EOF;
 EOD;
     $aQueryParam          = array( 1 => array( $batch_id, 'Integer' )
                                  , 2 => array( $contribution_id, 'Integer' ));
-    
+
     $oDao                 = CRM_Core_DAO::executeQuery( $cEntityDelete, $aQueryParam );
 
     // hook to carry out other actions on removal of contribution from a gift aid online batch
     CRM_Giftaidonline_Utils_Hook::invalidGiftAidOnlineContribution( $batch_id, $contribution_id );
-    
+
     return $rejectionId;
   }
 
@@ -387,7 +319,7 @@ EOD;
         $isValidAmount = $oDao->amount >= 0.01 ? true : false;
         if ( !$isValidAmount ) {
           $bValidDonorData = false;
-          $validationMsg = "INVALID DONOR DETAILS : AMOUNT IS LESS THAN 0.01 "; 
+          $validationMsg = "INVALID DONOR DETAILS : AMOUNT IS LESS THAN 0.01 ";
         }
       } else {
         $validationMsg = "INVALID DONOR DETAILS : FIRST NAME OR LAST NAME MISSING ";
@@ -695,16 +627,25 @@ EOD;
 			$packageSimpleXML = simplexml_load_string( $package );
 			$packageNamespaces = $packageSimpleXML->getNamespaces();
 
-      /* Replaced by iMacdonald Patch
+      /*Replaced by iMacdonald Patch
 			preg_match('/<Body>(.*?)<\/Body>/', str_replace("\n", '¬', $package), $matches);
 			$packageBody = str_replace('¬', "\n", $matches[1]);
-      
+
        * Described as
-       * That preg_match function will not match anything if $package contains any UTF-8 characters such as accented characters. Thus, the 'u' modifier to the regular expression is necessary to make preg_match UTF-8 compatible. The str_replace functions are being used so that the preg_match that looks for all the content between the body tags despite the presence of new lines. The newlines are being replaced with '¬', then preg_match runs, then those characters are being converted back to newline characters. It seems better to just give the regular expression the 's' modifier, which will make the dot character match all characters, including newlines. Then the substitutions are is no longer necessary.
+       * That preg_match function will not match anything if $package contains
+       * any UTF-8 characters such as accented characters. Thus, the 'u' modifier
+       * to the regular expression is necessary to make preg_match UTF-8 compatible.
+       * The str_replace functions are being used so that the preg_match that looks
+       * for all the content between the body tags despite the presence of new lines.
+       * The newlines are being replaced with '¬', then preg_match runs, then those
+       * characters are being converted back to newline characters. It seems better to
+       * just give the regular expression the 's' modifier, which will make the dot
+       * character match all characters, including newlines. Then the substitutions
+       * are is no longer necessary.
       */
       preg_match('/<Body>(.*)<\/Body>/su', $package, $matches);
       $packageBody = $matches[1];
-      
+
 			$irMark = base64_encode($this->_generateIRMark($packageBody, $packageNamespaces));
 			$package = str_replace('IRmark+Token', $irMark, $package);
 		}
@@ -714,47 +655,6 @@ EOD;
 	}
 
  /* Private methods. */
-
-	/**
-	 * Generates an IRmark hash from the given XML string for use in the IRmark
-	 * node inside the message body.  The string passed must contain one IRmark
-	 * element containing the string IRmark (ie. <IRmark>IRmark</IRmark>) or the
-	 * function will fail.
-	 *
-	 * @param $xmlString string The XML to generate the IRmark hash from.
-	 * @return string The IRmark hash.
-	 */
-	private function _generateIRMark($xmlString, $namespaces = null) {
-
-		if (is_string($xmlString)) {
-			$xmlString = preg_replace('/<(vat:)?IRmark Type="generic">[A-Za-z0-9\/\+=]*<\/(vat:)?IRmark>/', '', $xmlString, -1, $matchCount);
-			if ($matchCount == 1) {
-				$xmlDom = new DOMDocument;
-
-				if ($namespaces !== null && is_array($namespaces)) {
-					$namespaceString = array();
-					foreach ($namespaces AS $key => $value) {
-						if ($key !== '') {
-							$namespaceString[] = 'xmlns:'.$key.'="'.$value.'"';
-						} else {
-							$namespaceString[] = 'xmlns="'.$value.'"';
-						}
-					}
-					$bodyCompiled = '<Body '.implode(' ', $namespaceString).'>'.$xmlString.'</Body>';
-				} else {
-					$bodyCompiled = '<Body>'.$xmlString.'</Body>';
-				}
-				$xmlDom->loadXML($bodyCompiled);
-
-				return sha1($xmlDom->documentElement->C14N(), true);
-
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
-	}
 
   function giftAidPoll( $p_endpoint, $p_correlation ) {
 //    $sOutcome = null;
