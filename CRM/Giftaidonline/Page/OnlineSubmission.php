@@ -332,7 +332,7 @@ EOF;
       } else {
         $aEndPoint         = $p_hmrc_gift_aid->getResponseEndpoint();
         $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : null;
-        $sUrl              = CRM_Utils_System::url( 'civicrm/onlinesubmission'
+        $sUrl              = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission'
           , "id=$p_batch_id&task=POLL"
         );
         $sRefreshLink      = sprintf( "<a href='%s'>Refresh</a>"
@@ -518,8 +518,8 @@ EOF;
       $responseErrors = $responseMessage = $sQuerySt = $linkLabel = $sUrl = '';
       $cLink = $oDao->created_date."<br />";
       if (!$this->is_submitted($oDao->batch_id)) {
-        $submitUrl  = CRM_Utils_System::url( 'civicrm/onlinesubmission', "id=$oDao->batch_id");
-        $validateUrl = CRM_Utils_System::url( 'civicrm/onlinesubmission', "id=$oDao->batch_id&validate=1");
+        $submitUrl  = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission', "id=$oDao->batch_id");
+        $validateUrl = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission', "id=$oDao->batch_id&validate=1");
         $cLink .= "<a href='{$validateUrl}'>" . E::ts('Validate') . "</a><br />";
         $cLink .= "<a href='{$submitUrl}'>" . E::ts('Submit now') . "</a>";
       } else {
@@ -549,7 +549,7 @@ EOF;
           $responseMessage = $pRequest['response_xml'];
         }
         if (!empty($sQueryStr)) {
-          $sUrl  = CRM_Utils_System::url( 'civicrm/onlinesubmission', $sQueryStr);
+          $sUrl  = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission', $sQueryStr);
           $cLink .= sprintf( "<a href='%s'>{$linkLabel}</a><br />", $sUrl);
         }
       }
