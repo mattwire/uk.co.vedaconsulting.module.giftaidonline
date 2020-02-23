@@ -164,16 +164,19 @@ SQL;
     return $aAddress;
   }
 
-  //format postcode
-  function postcodeFormat($postcode)
-  {
-    //remove non alphanumeric characters
+  /**
+   * @param $postcode
+   *
+   * @return string
+   */
+  private static function postcodeFormat($postcode) {
+    // remove non alphanumeric characters
     $cleanPostcode = preg_replace("/[^A-Za-z0-9]/", '', $postcode);
 
-    //make uppercase
+    // make uppercase
     $cleanPostcode = strtoupper($cleanPostcode);
 
-    //insert space
+    // insert space
     $postcode = substr($cleanPostcode, 0, -3) . " " . substr($cleanPostcode, -3);
 
     return $postcode;
@@ -184,15 +187,15 @@ SQL;
    *
    * @return bool
    */
-  private function IsPostcode($postcode) {
-    $postcode = strtoupper(str_replace(' ','',$postcode));
-    if(preg_match("/^[A-Z]{1,2}[0-9]{2,3}[A-Z]{2}$/",$postcode) || preg_match("/^[A-Z]{1,2}[0-9]{1}[A-Z]{1}[0-9]{1}[A-Z]{2}$/",$postcode) || preg_match("/^GIR0[A-Z]{2}$/",$postcode))
-    {
-      return true;
+  public static function isPostcode($postcode) {
+    $postcode = strtoupper(str_replace(' ', '', $postcode));
+    if(preg_match("/^[A-Z]{1,2}[0-9]{2,3}[A-Z]{2}$/",$postcode)
+      || preg_match("/^[A-Z]{1,2}[0-9]{1}[A-Z]{1}[0-9]{1}[A-Z]{2}$/",$postcode)
+      || preg_match("/^GIR0[A-Z]{2}$/",$postcode)) {
+      return TRUE;
     }
-    else
-    {
-      return false;
+    else {
+      return FALSE;
     }
   }
 
@@ -356,8 +359,6 @@ EOD;
       }
       else {
         $aAddress = self::getDonorAddress($oDao->contact_id, $oDao->contribution_id, date('YmdHis', strtotime($oDao->created_date)));
-        // Need to clean up the postcode before we can submit it
-        $formattedPostcode = self::postcodeFormat($aAddress['postcode']);
 
         // Check address / postcode
         $bValidAddress = TRUE;
@@ -365,7 +366,9 @@ EOD;
           $validationDetail[] = 'Empty address';
           $bValidAddress = FALSE;
         }
-        if (self::IsPostcode($formattedPostcode)) {
+        // Need to clean up the postcode before we can submit it
+        $formattedPostcode = self::postcodeFormat($aAddress['postcode']);
+        if (!self::isPostcode($formattedPostcode)) {
           $validationDetail[] = 'Postcode invalid';
           $bValidAddress = FALSE;
         }
