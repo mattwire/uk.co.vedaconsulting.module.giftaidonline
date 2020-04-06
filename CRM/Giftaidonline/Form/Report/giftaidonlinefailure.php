@@ -27,7 +27,7 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
         'fields' => [
           'id' => [
             'name' => 'id',
-            'title' => 'Contact Id',
+            'title' => 'Contact ID',
             'required'    => TRUE,
           ],
           'sort_name' => [
@@ -40,10 +40,6 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
             'title'       => ts('First Name'),
             'no_repeat'   => TRUE,
           ],
-          'id' => [
-            'no_display'  => TRUE,
-            'required'    => TRUE,
-          ],
           'last_name' => [
             'title'       => ts('Last Name'),
             'no_repeat'   => TRUE,
@@ -54,31 +50,24 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
         'fields' => [
           'rejection_reason' => [
             'name'        => 'rejection_reason',
-            'title'       => 'Rejection Reason',
+            'title'       => 'Rejection reason',
             'required'    => TRUE,
             'default'     => TRUE,
             'no_repeat'   => TRUE,
           ],
           'rejection_detail' => [
             'name'        => 'rejection_detail',
-            'title'       => 'Rejection Detail',
+            'title'       => 'Rejection detail',
             'required'    => FALSE,
             'default'     => TRUE,
             'no_repeat'   => TRUE,
           ],
           'batch_id' => [
             'name'     => 'batch_id',
-            'title'    => 'Batch Id',
+            'title'    => 'Batch ID',
             'required' => TRUE,
             'default'  => TRUE,
             'no_repeat'=> TRUE,
-          ],
-          'contribution_id' => [
-            'name'     => 'contribution_id',
-            'title'    => 'Contribution Id',
-            'required' => TRUE,
-            'default'  => TRUE,
-            'no_repeat'=> FALSE,
           ],
         ],
         'filters'   => [
@@ -257,42 +246,22 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
 
   public function alterDisplay(&$rows) {
     // custom code to alter rows
-    $entryFound = FALSE;
     foreach ($rows as $rowNum => $row) {
-      if (array_key_exists('civicrm_membership_membership_type_id', $row)) {
-        if ($value = $row['civicrm_membership_membership_type_id']) {
-          $rows[$rowNum]['civicrm_membership_membership_type_id'] = CRM_Member_PseudoConstant::membershipType($value, FALSE);
-        }
-        $entryFound = TRUE;
-      }
-      if (array_key_exists('civicrm_address_state_province_id', $row)) {
-        if ($value = $row['civicrm_address_state_province_id']) {
-          $rows[$rowNum]['civicrm_address_state_province_id'] = CRM_Core_PseudoConstant::stateProvince($value, FALSE);
-        }
-        $entryFound = TRUE;
-      }
-
-      if (array_key_exists('civicrm_address_country_id', $row)) {
-        if ($value = $row['civicrm_address_country_id']) {
-          $rows[$rowNum]['civicrm_address_country_id'] = CRM_Core_PseudoConstant::country($value, FALSE);
-        }
-        $entryFound = TRUE;
-      }
-
-      if (array_key_exists('civicrm_contact_sort_name', $row) &&
-        $rows[$rowNum]['civicrm_contact_sort_name'] &&
-        array_key_exists('civicrm_contact_id', $row)
-      ) {
+      if (array_key_exists('civicrm_contact_sort_name', $row)) {
         $url = CRM_Utils_System::url("civicrm/contact/view",
           'reset=1&cid=' . $row['civicrm_contact_id'],
           $this->_absoluteUrl
         );
         $rows[$rowNum]['civicrm_contact_sort_name_link']  = $url;
         $rows[$rowNum]['civicrm_contact_sort_name_hover'] = ts("View Contact Summary for this Contact.");
-        $entryFound = TRUE;
       }
-      if (!$entryFound) {
-        break;
+      if (array_key_exists('civicrm_contribution_id', $row)) {
+        $url = CRM_Utils_System::url("civicrm/contact/view/contribution",
+          "reset=1&cid={$row['civicrm_contact_id']}&id={$row['civicrm_contribution_id']}&action=view&context=contribution",
+          $this->_absoluteUrl
+        );
+        $rows[$rowNum]['civicrm_contribution_id_link']  = $url;
+        $rows[$rowNum]['civicrm_contribution_id_hover'] = ts('View contribution');
       }
     }
   }
