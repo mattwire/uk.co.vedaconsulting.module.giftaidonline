@@ -365,9 +365,10 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
   /**
    * @param int $p_batch_id
    * @param string $task
+   * @param bool $isValidate Are we in validation mode - don't submit, just check the data
    *
-   * @return array|mixed
-   * @throws \Exception
+   * @return array [ array submissions, array rejectionIDs ]
+   * @throws \CRM_Core_Exception
    */
   public function process_batch($p_batch_id, $task = NULL, $isValidate = FALSE) {
     $oHmrcGiftAid = new HmrcGiftAid();
@@ -377,7 +378,7 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       // imacdonal Patch
       $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejectionIDs, $isValidate);
       if ($isValidate) {
-        return $rejectionIDs;
+        return [NULL, $rejectionIDs];
       }
 
       if ($oHmrcGiftAid->responseHasErrors() === FALSE) {
@@ -459,7 +460,7 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
     }
 
     $aSubmission = $this->_build_submission($p_batch_id, $oHmrcGiftAid);
-    return $aSubmission;
+    return [$aSubmission, NULL];
   }
 
   /**
@@ -482,17 +483,6 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
     $cQuery   = $this->_get_batch_record_sql();
     $oDao     = CRM_Core_DAO::executeQuery($cQuery);
     $aBatches = [];
-
-    // Get report instance
-    try {
-      $result = civicrm_api3('ReportInstance', 'getsingle', ['report_id' => GIFTAID_FAILURE_REPORT_ID]);
-      if (!empty($result['id'])) {
-        $reportUrl = 'civicrm/report/instance/' . $result['id'];
-      }
-    }
-    catch (Exception $e) {
-      $reportUrl = NULL;
-    }
 
     while ($oDao->fetch()) {
       $responseErrors = $responseMessage = $sQuerySt = $linkLabel = $sUrl = '';
@@ -566,16 +556,6 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
         $cLink .= $rLink;
       }
 
-      $reportLink = '';
-      if (!empty($reportUrl)) {
-        $rLink = CRM_Utils_System::url( $reportUrl
-          , "batch_id=$oDao->batch_id&force=1&reset=1"
-        );
-        $reportLink = sprintf( "<a href='%s'>View</a>"
-          , $rLink
-        );
-      }
-
       $aBatches[] = [
         'batch_id'              => $oDao->batch_id
       , 'batch_name'            => $oDao->batch_name
@@ -583,11 +563,37 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       , 'total_amount'          => $oDao->total_amount
       , 'total_gift_aid_amount' => $oDao->total_gift_aid_amount
       , 'action'                => $cLink
-      , 'report_link'           => $reportLink
+      , 'report_link'           => $this->getReportLink($oDao->batch_id),
       ];
     }
 
     return $aBatches;
+  }
+
+  /**
+   * Get the HTML URL for the rejection report
+   * @param int $batchID
+   *
+   * @return string
+   */
+  private function getReportLink($batchID) {
+    if (!isset(\Civi::$statics[__CLASS__]['reportURL'])) {
+      // Get report instance
+      try {
+        $result = civicrm_api3('ReportInstance', 'getsingle', ['report_id' => GIFTAID_FAILURE_REPORT_ID]);
+        if (!empty($result['id'])) {
+          \Civi::$statics[__CLASS__]['reportURL'] = 'civicrm/report/instance/' . $result['id'];
+        }
+      } catch (Exception $e) {
+        \Civi::$statics[__CLASS__]['reportURL'] = NULL;
+      }
+    }
+
+    if (\Civi::$statics[__CLASS__]['reportURL']) {
+      $rLink = CRM_Utils_System::url(\Civi::$statics[__CLASS__]['reportURL'], "batch_id={$batchID}&force=1&reset=1");
+      $reportLink = sprintf("<a href='%s' target='_blank' class='action-item'>View</a>", $rLink);
+    }
+    return $reportLink ?? '';
   }
 
   public function run() {
@@ -603,13 +609,19 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       $sTask = 'VIEW_BATCH';
     }
     else {
-      $processed = $this->process_batch($iBatchId, $task, $isValidate);
-      $this->assign('submission', $processed);
-      if ($isValidate) {
+      list($processed, $rejectionIDs) = $this->process_batch($iBatchId, $task, $isValidate);
+      $this->assign('batchID', $iBatchId);
+      $this->assign('batchTitle', civicrm_api3('Batch', 'getvalue', ['id' => $iBatchId, 'return' => 'title']));
+      if ($isValidate && !empty($rejectionIDs)) {
+        $this->assign('rejectionCount', count($rejectionIDs));
+        $this->assign('reportLink', $this->getReportLink($iBatchId));
         $sTask = 'VIEW_INVALID';
       }
-      else {
+      elseif (!$isValidate) {
+        // We can now submit the batch to HMRC
+        // @todo show a "submit option"
         $sTask = 'VIEW_SUBMISSION';
+        $this->assign('submission', $processed);
       }
     }
     $this->assign('task', $sTask);

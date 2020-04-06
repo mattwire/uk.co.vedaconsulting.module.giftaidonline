@@ -1,3 +1,4 @@
+<div class="crm-section">
 {if $task eq 'VIEW_BATCH'}
   <table id="batch_table">
     <thead>
@@ -109,40 +110,8 @@
   </script>
 {/literal}
 {elseif $task eq 'VIEW_INVALID'}
-  <table id="invalid_table">
-    <thead>
-    <tr>
-    {foreach from=$tableHeaders item=header}
-      <th>{$header}</th>
-    {/foreach}
-    </tr>
-    </thead>
-    <tbody>
-    {foreach from=$submission item=rejectrow}
-      <tr>
-      {foreach from=$rejectrow item=field}
-        <td>{$field}</td>
-      {/foreach}
-      </tr>
-    {/foreach}
-    </tbody>
-  </table>
-{literal}
-  <script type="text/javascript">
-    CRM.$(document).ready(function() {
-      CRM.$('#batch_table').dataTable( {
-                "aoColumns": [
-                  { "sWidth": "30%" },
-                  { "sWidth": "15%", "sType": "date" },
-                  { "sWidth": "10%", "sType": "numeric" },
-                  { "sWidth": "10%", "sType": "numeric" },
-                  { "sWidth": "20%" },
-                  { "sWidth": "15%" }
-                ],
-        "order": [[ 1, "desc" ]]
-              }
-      );
-    });
-  </script>
-{/literal}
+  <h3>{$batchTitle} has {$rejectionCount} validation errors</h3>
+  <div class="help">The batch has a number of validation errors. To submit to HMRC you will need to fix the errors and validate again.</div>
+  <div>To view the validation errors: {$reportLink}</div>
 {/if}
+</div>
