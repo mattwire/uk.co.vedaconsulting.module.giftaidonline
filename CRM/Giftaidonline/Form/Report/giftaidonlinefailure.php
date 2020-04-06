@@ -25,7 +25,7 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
       'civicrm_contact' => [
         'dao' => 'CRM_Contact_DAO_Contact',
         'fields' => [
-          'id' => [
+          'contact_id' => [
             'name' => 'id',
             'title' => 'Contact ID',
             'required'    => TRUE,
@@ -81,7 +81,7 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
       'civicrm_batch' => [
         'dao'       => 'CRM_Batch_DAO_Batch',
         'filters'   => [
-          'id'    => [
+          'batch_id'    => [
             'title'           => 'Batch Name',
             'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
             'options'         => CRM_Civigiftaid_Utils_Contribution::getBatchIdTitle( 'id desc' ),
@@ -91,7 +91,7 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
       'civicrm_contribution'  => [
         'dao'      => 'CRM_Contribute_DAO_Contribution',
         'fields'   => [
-          'id'   => [
+          'contribution_id'   => [
             'name'       => 'id',
             'title'      => 'Contribution ID',
             'no_display' => FALSE,
@@ -249,19 +249,19 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
     foreach ($rows as $rowNum => $row) {
       if (array_key_exists('civicrm_contact_sort_name', $row)) {
         $url = CRM_Utils_System::url("civicrm/contact/view",
-          'reset=1&cid=' . $row['civicrm_contact_id'],
+          'reset=1&cid=' . $row['civicrm_contact_contact_id'],
           $this->_absoluteUrl
         );
         $rows[$rowNum]['civicrm_contact_sort_name_link']  = $url;
         $rows[$rowNum]['civicrm_contact_sort_name_hover'] = ts("View Contact Summary for this Contact.");
       }
-      if (array_key_exists('civicrm_contribution_id', $row)) {
+      if (array_key_exists('civicrm_contribution_contribution_id', $row)) {
         $url = CRM_Utils_System::url("civicrm/contact/view/contribution",
-          "reset=1&cid={$row['civicrm_contact_id']}&id={$row['civicrm_contribution_id']}&action=view&context=contribution",
+          "reset=1&cid={$row['civicrm_contact_contact_id']}&id={$row['civicrm_contribution_contribution_id']}&action=view&context=contribution",
           $this->_absoluteUrl
         );
-        $rows[$rowNum]['civicrm_contribution_id_link']  = $url;
-        $rows[$rowNum]['civicrm_contribution_id_hover'] = ts('View contribution');
+        $rows[$rowNum]['civicrm_contribution_contribution_id_link']  = $url;
+        $rows[$rowNum]['civicrm_contribution_contribution_id_hover'] = ts('View contribution');
       }
     }
   }
