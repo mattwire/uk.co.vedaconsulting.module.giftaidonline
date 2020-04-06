@@ -1,5 +1,4 @@
 <?php
-
 /*
  +--------------------------------------------------------------------+
  | Copyright CiviCRM LLC. All rights reserved.                        |
@@ -19,15 +18,14 @@ abstract class CRM_Giftaidonline_Utils_Hook {
    * pattern and cache the instance in this variable
    *
    * @var object
-   * @static
    */
-  static private $_singleton = null;
+  private static $_singleton = null;
 
   /**
    * Constructor and getter for the singleton instance
    * @return instance of $config->userHookClass
    */
-  static function singleton( ) {
+  public static function singleton() {
     if (self::$_singleton == null) {
       $config = CRM_Core_Config::singleton( );
       $class = $config->userHookClass;
@@ -44,34 +42,32 @@ abstract class CRM_Giftaidonline_Utils_Hook {
   /**
    * This hook allows filtering contributions for gift-aid
    * @param bool    $isEligible eligibilty already detected if getDeclaration() method.
-   * @param integer $contactID  contact being checked
+   * @param int $contactID  contact being checked
    * @param date    $date  date gift-aid declaration was made on
-   * @param $contributionID  contribution id if any being referred
+   * @param int $contributionID  contribution id if any being referred
    *
-   * @access public
    */
-  static function giftAidOnlineSubmitted( $batchID ) {
+  public static function giftAidOnlineSubmitted( $batchID ) {
     return self::singleton( )->invoke( 1, $batchID, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, 'civicrm_giftAidOnlineSubmitted' );
   }
 
   /**
    * This hook allows doing any extra processing for contributions that were removed due to not meeting the gift aid online rules
-   * @param $contributionsRemoved  contribution ids that have been removed from batch
+   * @param int $batchID
+   * @param int $contributionIDRemoved contribution ID that have been removed from batch
    *
-   * @access public
+   * @return mixed
    */
-  static function invalidGiftAidOnlineContribution( $batchID, $contributionIDRemoved ) {
+  public static function invalidGiftAidOnlineContribution( $batchID, $contributionIDRemoved ) {
     return self::singleton( )->invoke( 2, $batchID, $contributionIDRemoved, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, 'civicrm_invalidGiftAidOnlineContribution' );
   }
 
   /**
    * This hook allows modification of query for selecting batches for Online giftaid submission
    * Example: selecting only giftaid batches for Online giftaid submission page
-   * @param $query    query for selecting batches for Online giftaid submission
-   *
-   * @access public
+   * @param string $query query for selecting batches for Online giftaid submission
    */
-  static function modifySelectBatchesQuery( &$query ) {
+  public static function modifySelectBatchesQuery( &$query ) {
     return self::singleton( )->invoke( 1, $query, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, 'civicrm_modifySelectBatchesQuery' );
   }
 }

@@ -404,7 +404,7 @@ class GovTalk {
 	 * Returns information from the Gateway ResponseEndPoint including recomended
 	 * retry times, if there is one.
 	 *
-	 * @return array The Gateway endpoint and retry interval, or false if this isn't set.
+	 * @return array|bool The Gateway endpoint and retry interval, or false if this isn't set.
 	 */
 	public function getResponseEndpoint() {
 
@@ -464,7 +464,7 @@ class GovTalk {
 	 * @return mixed The message body as a SimpleXML object, or false if this isn't set.
 	 */
 	public function getResponseBody() {
-	
+
 		if (isset($this->_fullResponseObject)) {
 			return $this->_fullResponseObject->Body;
 		} else {
@@ -474,7 +474,7 @@ class GovTalk {
 	}
 
  /* General envelope related set methods. */
- 
+
 	/**
 	 * Change the URL used to talk to the Government Gateway from that set during
 	 * the instance instantiation. Very handy when required to poll a different
@@ -483,9 +483,9 @@ class GovTalk {
 	 * @param string $govTalkServer GovTalk server URL.
 	 */
 	public function setGovTalkServer($govTalkServer) {
-	
+
 		$this->_govTalkServer = $govTalkServer;
-	
+
 	}
 
 	/**
@@ -512,7 +512,7 @@ class GovTalk {
 		}
 
 	}
-	
+
 	/**
 	 * Switch off (or on) schema validation of outgoing and incoming XML data
 	 * against the additional XML schema.
@@ -521,14 +521,14 @@ class GovTalk {
 	 * @return boolean True if the validation is set, false if setting the validation failed.
 	 */
 	public function setSchemaValidation($validate) {
-	
+
 		if (is_bool($validate)) {
 			$this->_schemaValidation = $validate;
 			return true;
 		} else {
 			return false;
 		}
-	
+
 	}
 
 	/**
@@ -943,7 +943,7 @@ class GovTalk {
 		return true;
 
 	}
-	
+
  /* Specific generic Gateway requests. */
 
 	/**
@@ -957,7 +957,7 @@ class GovTalk {
 	 * @return boolean True if message was successfully deleted from the gateway, false otherwise.
 	 */
 	public function sendDeleteRequest($correlationId = null, $messageClass = null) {
-	
+
 		if (($correlationId !== null) && ($messageClass !== null)) {
 			if (preg_match('/[0-9A-F]{0,32}/', $correlationId)) {
 				$correlationId = $correlationId;
@@ -972,21 +972,21 @@ class GovTalk {
 				return false;
 			}
 		}
-		
+
 		$this->setMessageClass($messageClass);
 		$this->setMessageQualifier('request');
 		$this->setMessageFunction('delete');
 		$this->setMessageCorrelationId($correlationId);
 		$this->setMessageBody('');
-		
+
 		if ($this->sendMessage() && ($this->responseHasErrors() === false)) {
 			return true;
 		} else {
 			return false;
 		}
-	
+
 	}
-	
+
 	/**
 	 * Submits and processes a generic list request. By default the request
 	 * refers to the last stored message class, but this behaviour can be over-
@@ -999,7 +999,7 @@ class GovTalk {
 		if ($messageClass === null) {
 			$messageClass = $this->_messageClass;
 		}
-		
+
 		$this->setMessageClass($messageClass);
 		$this->setMessageQualifier('request');
 		$this->setMessageFunction('list');
@@ -1042,7 +1042,7 @@ class GovTalk {
 	 * @return boolean True if the message was successfully submitted to the Gateway and a response was received, false if not.
 	 */
 	public function sendMessage() {
-	
+
 		if ($this->_fullRequestString = $this->_packageGovTalkEnvelope()) {
 			$this->_fullResponseString = $this->_fullResponseObject = null;
 		   if (function_exists('curl_init')) {
@@ -1114,7 +1114,7 @@ class GovTalk {
 	   return false;
 
 	}
-	
+
 	/**
 	 * This method is designed to be over-ridden by extending classes which
 	 * require the final XML package to be digested (and, perhaps, altered) in
@@ -1128,9 +1128,9 @@ class GovTalk {
 	 * @return string The new (or unaltered) package after application of the digest.
 	 */
 	protected function packageDigest($package) {
-	
+
 		return $package;
-	
+
 	}
 
 	/**
@@ -1316,7 +1316,7 @@ class GovTalk {
 						} else {
 							return false;
 						}
-						
+
 					} else {
 						return false;
 					}
@@ -1331,7 +1331,7 @@ class GovTalk {
 		}
 
 	}
-	
+
 	/**
 	 * Packages the given array into an XMLWriter object where each element takes
 	 * its name from the array index, and its value from the array value.  In the
@@ -1386,7 +1386,7 @@ class GovTalk {
 	 * @return boolean Always returns true.
 	 */
 	private function _generateTransactionId() {
-	
+
 		list($usec, $sec) = explode(' ', microtime());
 		$this->_transactionId = $sec.str_replace('0.', '', $usec);
 		return true;

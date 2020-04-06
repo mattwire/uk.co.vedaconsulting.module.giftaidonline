@@ -188,8 +188,11 @@ SQL;
    * @return bool
    */
   public static function isPostcode($postcode) {
+    // Convert to uppercase and remove spaces
     $postcode = strtoupper(str_replace(' ', '', $postcode));
-    if(preg_match("/^[A-Z]{1,2}[0-9]{2,3}[A-Z]{2}$/",$postcode)
+    // We also match on "X" so we can process non-UK addresses
+    if (($postcode === 'X')
+      || preg_match("/^[A-Z]{1,2}[0-9]{2,3}[A-Z]{2}$/",$postcode)
       || preg_match("/^[A-Z]{1,2}[0-9]{1}[A-Z]{1}[0-9]{1}[A-Z]{2}$/",$postcode)
       || preg_match("/^GIR0[A-Z]{2}$/",$postcode)) {
       return TRUE;
@@ -775,4 +778,22 @@ EOD;
 
     return $pollResponse;
   }
+
+  /**
+   * Get the successful response text message.
+   *
+   * @return the text successful messages.
+   */
+  public function getResponseSuccessfullMessage() {
+    $oBody    = $this->getResponseBody();
+    $sMessage = null;
+    if ( $oBody ) {
+      if ( isset( $oBody->SuccessResponse->IRmarkReceipt->Message ) ) {
+        $sMessage = $oBody->SuccessResponse->IRmarkReceipt->Message;
+      }
+    }
+
+    return $sMessage;
+  }
+
 }

@@ -17,7 +17,7 @@ require_once (E::path('govtalk/HmrcGiftAid.php'));
 class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
 
   private function _get_submission($p_batch_id) {
-    $sSql =<<<EOF
+    $sSql = "
         SELECT id
         ,      batch_id
         ,      created_date
@@ -33,13 +33,13 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
         FROM   civicrm_gift_aid_submission
         WHERE  batch_id = %1
         ORDER BY id DESC
-EOF;
+";
     $aQueryParam = [
       1 => [$p_batch_id  , 'Integer']
     ];
 
-    $oDao = CRM_Core_DAO::executeQuery( $sSql, $aQueryParam );
-    if ( $oDao->fetch() ) {
+    $oDao = CRM_Core_DAO::executeQuery($sSql, $aQueryParam);
+    if ($oDao->fetch()) {
       $aSubmission['id']                          = $oDao->id;
       $aSubmission['batch_id']                    = $oDao->batch_id;
       $aSubmission['created_date']                = $oDao->created_date;
@@ -59,8 +59,8 @@ EOF;
     return $aSubmission;
   }
 
-  private function _get_polling_request( $submission_id ) {
-    $pSql =<<<EOF
+  private function _get_polling_request($submission_id) {
+    $pSql = "
         SELECT id
         ,      submission_id
         ,      created_date
@@ -76,13 +76,13 @@ EOF;
         FROM   civicrm_gift_aid_polling_request
         WHERE  submission_id = %1
         ORDER BY id DESC
-EOF;
+";
     $pQueryParam = [
       1 => [$submission_id  , 'Integer']
     ];
 
-    $oDao = CRM_Core_DAO::executeQuery( $pSql, $pQueryParam );
-    if ( $oDao->fetch() ) {
+    $oDao = CRM_Core_DAO::executeQuery($pSql, $pQueryParam);
+    if ($oDao->fetch()) {
       $pRequest['id']                          = $oDao->id;
       $pRequest['submission_id']               = $oDao->submission_id;
       $pRequest['created_date']                = $oDao->created_date;
@@ -114,7 +114,7 @@ EOF;
     , $p_transaction_id
     , $p_gateway_timestamp
   ) {
-    $sSql =<<<EOF
+    $sSql = "
               INSERT INTO civicrm_gift_aid_submission(
                 batch_id
               , request_xml
@@ -138,26 +138,25 @@ EOF;
               , %9
               , %10
               );
-EOF;
+";
     $aQueryParam = [
-      1   => [$p_batch_id, 'Integer']
-    , 2   => [empty( $p_request_xml                 ) ? '' : $p_request_xml                , 'String']
-    , 3   => [empty( $p_response_xml                ) ? '' : $p_response_xml               , 'String']
-    , 4   => [empty( $p_response_qualifier          ) ? '' : $p_response_qualifier         , 'String']
-    , 5   => [empty( $p_response_errors             ) ? '' : $p_response_errors            , 'String']
-    , 6   => [empty( $p_response_end_point          ) ? '' : $p_response_end_point         , 'String']
-    , 7   => [empty( $p_response_end_point_interval ) ? '' : $p_response_end_point_interval, 'String']
-    , 8   => [empty( $p_response_correlation_id     ) ? '' : $p_response_correlation_id    , 'String']
-    , 9   => [empty( $p_transaction_id              ) ? '' : $p_transaction_id             , 'String']
-    , 10  => [empty( $p_gateway_timestamp           ) ? '' : date( "Y-m-d H:i:s", $p_gateway_timestamp)          , 'String']
+      1   => [$p_batch_id, 'Integer'],
+      2   => [!empty($p_request_xml) ? $p_request_xml : '', 'String'],
+      3   => [!empty($p_response_xml) ? $p_response_xml : '', 'String'],
+      4   => [!empty($p_response_qualifier) ? $p_response_qualifier : '', 'String'],
+      5   => [!empty($p_response_errors) ? $p_response_errors : '', 'String'],
+      6   => [!empty($p_response_end_point) ? $p_response_end_point : '', 'String'],
+      7   => [!empty($p_response_end_point_interval) ? $p_response_end_point_interval : '', 'String'],
+      8   => [!empty($p_response_correlation_id) ? $p_response_correlation_id : '', 'String'],
+      9   => [!empty($p_transaction_id) ? $p_transaction_id : '', 'String'],
+      10  => [!empty($p_gateway_timestamp) ? date( "Y-m-d H:i:s", $p_gateway_timestamp) : '', 'String'],
     ];
 
-    $oDao = CRM_Core_DAO::executeQuery( $sSql, $aQueryParam );
-    if ( is_a( $oDao, 'DB_Error' ) ) {
-      CRM_Core_Error::fatal( 'Trying to create a new Submission record failed.' );
+    $oDao = CRM_Core_DAO::executeQuery($sSql, $aQueryParam);
+    if (is_a($oDao, 'DB_Error')) {
+      Throw new CRM_Core_Exception('Trying to create a new Submission record failed.');
     }
-    $submissionId = CRM_Core_DAO::singleValueQuery('SELECT LAST_INSERT_ID()');
-    return $submissionId;
+    return CRM_Core_DAO::singleValueQuery('SELECT LAST_INSERT_ID()');
   }
 
   private function _record_polling (
@@ -172,8 +171,8 @@ EOF;
     , $p_transaction_id
     , $p_gateway_timestamp
   ) {
-    $sSql =<<<EOF
-              INSERT INTO civicrm_gift_aid_polling_request(
+    $sSql = "
+              INSERT INTO civicrm_gift_aid_polling_request (
                 submission_id
               , request_xml
               , response_xml
@@ -196,31 +195,31 @@ EOF;
               , %9
               , %10
               );
-EOF;
+";
     $aQueryParam = [
-      1   => [$p_submission_id                                                            , 'Integer']
-    , 2   => [empty( $p_request_xml                ) ? '' : $p_request_xml                , 'String']
-    , 3   => [empty( $p_response_xml               ) ? '' : $p_response_xml               , 'String']
-    , 4   => [empty( $p_response_qualifier         ) ? '' : $p_response_qualifier         , 'String']
-    , 5   => [empty( $p_response_errors            ) ? '' : $p_response_errors            , 'String']
-    , 6   => [empty( $p_response_end_point         ) ? '' : $p_response_end_point         , 'String']
-    , 7   => [empty( $p_response_end_point_interval) ? '' : $p_response_end_point_interval, 'String']
-    , 8   => [empty( $p_response_correlation_id    ) ? '' : $p_response_correlation_id    , 'String']
-    , 9   => [empty( $p_transaction_id             ) ? '' : $p_transaction_id             , 'String']
-    , 10  => [empty( $p_gateway_timestamp          ) ? '' : date( "Y-m-d H:i:s", $p_gateway_timestamp)          , 'String']
+      1   => [$p_submission_id, 'Integer'],
+      2   => [!empty($p_request_xml) ? $p_request_xml : '', 'String'],
+      3   => [!empty($p_response_xml) ? $p_response_xml : '', 'String'],
+      4   => [!empty($p_response_qualifier) ? $p_response_qualifier : '', 'String'],
+      5   => [!empty($p_response_errors) ? $p_response_errors : '', 'String'],
+      6   => [!empty($p_response_end_point) ? $p_response_end_point : '', 'String'],
+      7   => [!empty($p_response_end_point_interval) ? $p_response_end_point_interval : 0, 'Integer'],
+      8   => [!empty($p_response_correlation_id) ? $p_response_correlation_id : '', 'String'],
+      9   => [!empty($p_transaction_id) ? $p_transaction_id : '', 'String'],
+      10  => [!empty($p_gateway_timestamp) ? date( "Y-m-d H:i:s", $p_gateway_timestamp) : '', 'String'],
     ];
 
-    $oDao = CRM_Core_DAO::executeQuery( $sSql, $aQueryParam );
+    $oDao = CRM_Core_DAO::executeQuery($sSql, $aQueryParam);
     if ( is_a( $oDao, 'DB_Error' ) ) {
-      CRM_Core_Error::fatal( 'Trying to create a new Submission record failed.' );
+      Throw new CRM_Core_Exception('Trying to create a new Submission record failed.');
     }
 
     return NULL;
   }
 
-  private function _get_batch_record_sql ($batch_id = null) {
-    $sWhere = empty( $batch_id ) ? null : ' AND batch.id = ' . $batch_id;
-    $sQuery =<<<EOF
+  private function _get_batch_record_sql ($batch_id = NULL) {
+    $sWhere = empty($batch_id) ? NULL : ' AND batch.id = ' . $batch_id;
+    $sQuery = "
       SELECT batch.id                                        AS batch_id
       ,     batch.title                                      AS batch_name
       ,     batch.created_date                               AS created_date
@@ -230,50 +229,42 @@ EOF;
       INNER JOIN civicrm_contribution contribution                           ON entity_batch.entity_table = 'civicrm_contribution' AND entity_batch.entity_id = contribution.id
       INNER JOIN civicrm_value_gift_aid_submission value_gift_aid_submission ON value_gift_aid_submission.entity_id = contribution.id
       INNER JOIN civicrm_batch batch                                         ON batch.id = entity_batch.batch_id
-      $sWhere
+      {$sWhere}
       GROUP BY batch.id
       ,        batch.title
       ,        batch.created_date
       ORDER BY batch.created_date DESC;
-EOF;
+";
     // Hook to modify the query for selection of batches (Useful to select only giftaid batches)
-    if (empty( $batch_id )) {
+    if (empty($batch_id)) {
       CRM_Giftaidonline_Utils_Hook::modifySelectBatchesQuery($sQuery);
     }
     return $sQuery;
   }
 
   public function get_submission_status($pEndpoint, $pCorrelation) {
-    $sType = 'status';
-    if ( isset( $pEndpoint ) && isset( $pCorrelation ) ) {
+    if (isset($pEndpoint) && isset($pCorrelation)) {
       $oHmrcGiftAid = new HmrcGiftAid();
-      $pollResponse = $oHmrcGiftAid->declarationResponsePoll( $pCorrelation
-        , $pEndpoint
-      );
-      if ( $pollResponse ) {
-        if ( isset( $pollResponse['endpoint'] ) ) {
-          $sMessage = sprintf( "Response pending.  Please wait %d seconds and then try again."
-            , $pollResponse['interval']
-          );
+      $pollResponse = $oHmrcGiftAid->declarationResponsePoll($pCorrelation, $pEndpoint);
+      if ($pollResponse) {
+        if (isset($pollResponse['endpoint'])) {
+          $sMessage = sprintf("Response pending.  Please wait %d seconds and then try again.", $pollResponse['interval']);
         } else {
-          $sMessage = sprintf( 'Response received, delete command sent.  See below:<br />%s' . print_r( $pollResponse, true ) );
+          $sMessage = sprintf('Response received, delete command sent. See below:<br />%s' . print_r($pollResponse, TRUE));
           if ($oHmrcGiftAid->sendDeleteRequest()) {
             $sMessage .= 'Delete request successful. Resource no longer exists on Gateway.';
           } else {
             $sMessage .= 'Delete request failed. Resource may still exist on Gateway.';
-            $sType     = 'error';
           }
         }
       } else {
-        $sMessage = sprintf( 'Government Gateway returned errors in response to poll request: <br />%s'
-          , print_r( $oHmrcGiftAid->getResponseErrors(), true )
+        $sMessage = sprintf('Government Gateway returned errors in response to poll request: <br />%s'
+          , print_r($oHmrcGiftAid->getResponseErrors(), TRUE)
         );
-        $sType    = 'error';
       }
 
     } else {
       $sMessage = 'Unable to poll Government Gateway: missing arguments.';
-      $sType    = 'error';
     }
 
     return $sMessage;
@@ -286,7 +277,7 @@ EOF;
    */
   public function is_submitted($p_batch_id) {
     $bIsSubmitted = NULL;
-    $aSubmission  = $this->_get_submission($p_batch_id);
+    $aSubmission = $this->_get_submission($p_batch_id);
     if (empty($aSubmission)) {
       $bIsSubmitted = FALSE;
     } else {
@@ -296,10 +287,9 @@ EOF;
     return $bIsSubmitted;
   }
 
-  public function allow_resubmission($p_batch_id) {
+  public function allow_resubmission($p_batch_id, $pRequest) {
     $allowResubmission = FALSE;
     $aSubmission = $this->_get_submission($p_batch_id);
-    $pRequest = $this->_get_polling_request($aSubmission['id']);
     if ($aSubmission['response_qualifier'] == 'error' && !empty($aSubmission['response_errors'])) {
       $allowResubmission = TRUE;
     }
@@ -317,36 +307,28 @@ EOF;
    */
   private function _build_submission($p_batch_id, $p_hmrc_gift_aid) {
     $aSubmission = [];
-    $sQuery      = $this->_get_batch_record_sql( $p_batch_id );
-    $oBatchDao   = CRM_Core_DAO::executeQuery( $sQuery );
+    $sQuery = $this->_get_batch_record_sql($p_batch_id);
+    $oBatchDao = CRM_Core_DAO::executeQuery($sQuery);
     if ($oBatchDao->fetch()) {
-      $dSubmissionDate = date('YmdHmi', $p_hmrc_gift_aid->getGatewayTimestamp());
+      $dSubmissionDate = date('Y-m-d H:i:s', $p_hmrc_gift_aid->getGatewayTimestamp());
       $sSuccessMessage = $p_hmrc_gift_aid->getResponseSuccessfullMessage();
-      $sResponseStatus = null;
+      $sResponseStatus = NULL;
       if (!empty($sSuccessMessage)) {
-        $sResponseStatus = sprintf( "<div>%s</div>"
-          , $sSuccessMessage
-        );
+        $sResponseStatus = sprintf("<div>%s</div>", $sSuccessMessage);
         // hook to carry out other actions on success submission
         CRM_Giftaidonline_Utils_Hook::giftAidOnlineSubmitted($p_batch_id);
       } else {
-        $aEndPoint         = $p_hmrc_gift_aid->getResponseEndpoint();
-        $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : null;
-        $sUrl              = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission'
-          , "id=$p_batch_id&task=POLL"
-        );
-        $sRefreshLink      = sprintf( "<a href='%s'>Refresh</a>"
-          , $sUrl
-        );
-        $sResponseError  = $this->_response_error_to_string( $p_hmrc_gift_aid->getFullXMLResponse(), '<br /><br />' );
-        $sResponseStatus = sprintf( "<div>Status:<strong>%s</strong></div><div>%s</div>"
-          , $p_hmrc_gift_aid->getResponseQualifier()
-          , $sResponseError
-        );
-        if ( !empty( $aEndPoint ) ) {
-          $sResponseStatus .= sprintf( "<div>Please wait for %s seconds then click on the Refresh link to get an update of the submission.</div><div>[%s]</div>"
-            , $sEndPointInterval
-            , $sRefreshLink
+        $aEndPoint = $p_hmrc_gift_aid->getResponseEndpoint();
+        $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : NULL;
+        $sUrl = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission', "id=$p_batch_id&task=POLL");
+        $sRefreshLink = sprintf("<a href='%s'>Refresh</a>", $sUrl);
+        $sResponseError = $this->_response_error_to_string($p_hmrc_gift_aid->getFullXMLResponse(), '<br /><br />');
+        $responseStatus = empty($p_hmrc_gift_aid->getResponseQualifier()) ? 'Unknown' : $p_hmrc_gift_aid->getResponseQualifier();
+        $sResponseStatus = sprintf("<div>Status: <strong>%s</strong></div><div>%s</div>", $responseStatus, $sResponseError);
+        if (!empty($aEndPoint)) {
+          $sResponseStatus .= sprintf( "<div>Please wait for %s seconds then click on the Refresh link to get an update of the submission.</div><div>[%s]</div>",
+            $sEndPointInterval,
+            $sRefreshLink
           );
         }
       }
@@ -354,7 +336,7 @@ EOF;
         'batch_id'              => $p_batch_id
       , 'batch_name'            => $oBatchDao->batch_name
       , 'created_date'          => $oBatchDao->created_date
-      , 'submision_date'        => date( "Y-m-d H:i:s", strtotime( $dSubmissionDate ) )
+      , 'submision_date'        => $dSubmissionDate
       , 'total_amount'          => $oBatchDao->total_amount
       , 'total_gift_aid_amount' => $oBatchDao->total_gift_aid_amount
       , 'hmrc_response'         => $sResponseStatus
@@ -364,18 +346,20 @@ EOF;
     return $aSubmission;
   }
 
-  private function _response_error_to_string( $p_response_errors, $p_separator = "\n" ) {
-    $oXmlReader =  new XMLReader();
-    $oXmlReader->XML( $p_response_errors );
+  private function _response_error_to_string($p_response_errors, $p_separator = "\n") {
     $aError = [];
-    while ( $oXmlReader->read() ) {
-      if ( $oXmlReader->name === 'Error' ) {
-        $aError[] = $oXmlReader->readString() ;
-        $oXmlReader->next();
+    if (!empty($p_response_errors)) {
+      $oXmlReader = new XMLReader();
+      $oXmlReader->XML($p_response_errors);
+      while ($oXmlReader->read()) {
+        if ($oXmlReader->name === 'Error') {
+          $aError[] = $oXmlReader->readString();
+          $oXmlReader->next();
+        }
       }
     }
 
-    return implode( $p_separator, $aError );
+    return implode($p_separator, $aError);
   }
 
   /**
@@ -396,7 +380,7 @@ EOF;
         return $rejections;
       }
 
-      if ($oHmrcGiftAid->responseHasErrors() === false) {
+      if ($oHmrcGiftAid->responseHasErrors() === FALSE) {
         /**
          * TODO: to handle error in submission.
          */
@@ -419,7 +403,7 @@ EOF;
     } else {
       if ($task == 'RESUBMIT') {
         $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejections);
-        if ($oHmrcGiftAid->responseHasErrors() === false) {
+        if ($oHmrcGiftAid->responseHasErrors() === FALSE) {
           /**
            * TODO: to handle error in submission.
            */
@@ -441,25 +425,31 @@ EOF;
       } else if ($task == 'POLL') {
         $aSubmission = $this->_get_submission($p_batch_id);
         if (empty($aSubmission)) {
-          CRM_Core_Error::fatal("Cannot locate Submission record for batch: $p_batch_id");
+          Throw new CRM_Core_Exception("Cannot locate Submission record for batch: {$p_batch_id}");
         }
         $sEndPoint    = $aSubmission['response_end_point'];
         $sCorrelation = $aSubmission['response_correlation_id'];
-        $oHmrcGiftAid = $oHmrcGiftAid->giftAidPoll( $sEndPoint, $sCorrelation );
+        $oHmrcGiftAid = $oHmrcGiftAid->giftAidPoll($sEndPoint, $sCorrelation);
         $aEndPoint         = $oHmrcGiftAid->getResponseEndpoint();
-        $sEndPoint         = isset($aEndPoint['endpoint']) ? $aEndPoint['endpoint'] : null;
-        $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : null;
-        $submissionId = $this->_record_polling( $aSubmission['id']
-          , $oHmrcGiftAid->getFullXMLRequest()
-          , $oHmrcGiftAid->getFullXMLResponse()
-          , $oHmrcGiftAid->getResponseQualifier()
-          , $this->_response_error_to_string($oHmrcGiftAid->getFullXMLResponse())
-          , $sEndPoint
-          , $sEndPointInterval
-          , $oHmrcGiftAid->getResponseCorrelationId()
-          , $oHmrcGiftAid->getTransactionId()
-          , $oHmrcGiftAid->getGatewayTimestamp()
-        );
+        if (!$aEndPoint) {
+          CRM_Core_Session::setStatus('Could not get new status from HMRC.', E::SHORT_NAME);
+        }
+        else {
+          $sEndPoint = isset($aEndPoint['endpoint']) ? $aEndPoint['endpoint'] : NULL;
+          $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : NULL;
+          $submissionId = $this->_record_polling(
+            $aSubmission['id'],
+            $oHmrcGiftAid->getFullXMLRequest(),
+            $oHmrcGiftAid->getFullXMLResponse(),
+            $oHmrcGiftAid->getResponseQualifier(),
+            $this->_response_error_to_string($oHmrcGiftAid->getFullXMLResponse()),
+            $sEndPoint,
+            $sEndPointInterval,
+            $oHmrcGiftAid->getResponseCorrelationId(),
+            $oHmrcGiftAid->getTransactionId(),
+            $oHmrcGiftAid->getGatewayTimestamp()
+          );
+        }
       }
     }
 
@@ -526,7 +516,7 @@ EOF;
         $aSubmission = $this->_get_submission($oDao->batch_id);
         $pRequest = $this->_get_polling_request($aSubmission['id']);
         // Allow resubmission of the batch, if previously reported as 'error'
-        if ($this->allow_resubmission($oDao->batch_id)) {
+        if ($this->allow_resubmission($oDao->batch_id, $pRequest)) {
           $sQueryStr = "id=$oDao->batch_id&task=RESUBMIT";
           $linkLabel = 'Re-Submit now';
           // Get submission response error
@@ -616,7 +606,10 @@ EOF;
     $task = CRM_Utils_Request::retrieve('task', 'String');
     $isValidate = CRM_Utils_Request::retrieveValue('validate', 'Boolean', FALSE);
     if (empty($iBatchId)) {
-      $this->assign('batches', $this->get_all_giftaid_batch());
+      $batches = $this->get_all_giftaid_batch();
+      $tableHeaders = ['Batch Name', 'Date Created', 'Total', 'Gift Aid Amount', 'Status', 'Rejection Report'];
+      $this->assign('tableHeaders', $tableHeaders);
+      $this->assign('batches', $batches);
       $sTask = 'VIEW_BATCH';
     }
     else {
@@ -624,7 +617,6 @@ EOF;
       $this->assign('submission', $processed);
       if ($isValidate) {
         $sTask = 'VIEW_INVALID';
-        $this->assign('tableHeaders', array_keys(reset($processed)));
       }
       else {
         $sTask = 'VIEW_SUBMISSION';

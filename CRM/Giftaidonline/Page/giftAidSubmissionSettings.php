@@ -26,7 +26,7 @@ SQL;
     $oDao      = CRM_Core_DAO::executeQuery( $sSql, $aParams );
 
     if ( is_a( $oDao, 'DB_Error' ) ) {
-      CRM_Core_Error::fatal();
+      Throw new CRM_Core_Exception('DB error reading civicrm_gift_aid_submission_setting');
     }
     if ( $oDao->fetch() ) {
       $aSettings['id']          = $oDao->id;

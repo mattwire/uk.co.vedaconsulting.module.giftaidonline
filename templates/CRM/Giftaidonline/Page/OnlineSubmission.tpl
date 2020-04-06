@@ -2,12 +2,9 @@
   <table id="batch_table">
     <thead>
     <tr>
-      <th>Batch Name</th>
-      <th>Date Created</th>
-      <th>Total</th>
-      <th>Gift Aid Amount</th>
-      <th>Status</th>
-      <th>Rejection Report</th>
+      {foreach from=$tableHeaders item=header}
+        <th>{$header}</th>
+      {/foreach}
     </tr>
     </thead>
     <tbody>
@@ -27,14 +24,15 @@
   <script type="text/javascript">
     cj(document).ready(function() {
       cj('#batch_table').dataTable( {
-                "aoColumns": [
-                  { "sWidth": "30%" },
+        "aoColumns": [
+                  { "sWidth": "30%", "bSortable": true },
                   { "sWidth": "15%", "sType": "date" },
                   { "sWidth": "10%", "sType": "numeric" },
                   { "sWidth": "10%", "sType": "numeric" },
                   { "sWidth": "20%" },
                   { "sWidth": "15%" }
-                ]
+                ],
+        "order": [[ 1, "desc" ]]
               }
       );
 
@@ -83,7 +81,7 @@
         <tr>
           <td>{$submission.batch_name}</td>
           <td>{$submission.created_date}</td>
-          <td>{$submission.submision_date}</td>
+          <td>{$submission.submission_date}</td>
           <td>{$submission.total_amount}</td>
           <td>{$submission.total_gift_aid_amount}</td>
           <td>{$submission.hmrc_response}</td>
@@ -103,7 +101,8 @@
                   { "sWidth": "10%", "sType": "numeric" },
                   { "sWidth": "10%", "sType": "numeric" },
                   { "sWidth": "20%" }
-                ]
+                ],
+        "order": [[ 1, "desc" ]]
               }
       );
     } );
@@ -139,7 +138,8 @@
                   { "sWidth": "10%", "sType": "numeric" },
                   { "sWidth": "20%" },
                   { "sWidth": "15%" }
-                ]
+                ],
+        "order": [[ 1, "desc" ]]
               }
       );
     });
