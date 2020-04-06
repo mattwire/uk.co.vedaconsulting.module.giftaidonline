@@ -1,6 +1,6 @@
 <div class="crm-block">
   <div class="crm-section">
-  {if $task eq 'VIEW_BATCH'}
+  {if $task eq 'VIEW_BATCHES'}
     <table id="batch_table">
       <thead>
       <tr>
@@ -14,10 +14,10 @@
         <tr>
           <td>{$batch.batch_name}</td>
           <td>{$batch.created_date}</td>
-          <td>{$batch.total_amount}</td>
-          <td>{$batch.total_gift_aid_amount}</td>
+          <td>{$batch.total_amount|crmMoney:$currency}</td>
+          <td>{$batch.total_gift_aid_amount|crmMoney:$currency}</td>
+          <td>{$batch.status}</td>
           <td>{$batch.action}</td>
-          <td>{$batch.report_link}</td>
         </tr>
       {/foreach}
       </tbody>
@@ -27,7 +27,7 @@
       cj(document).ready(function() {
         cj('#batch_table').dataTable( {
                   "aoColumns": [
-                    { "sWidth": "30%", "bSortable": true },
+                    { "sWidth": "30%" },
                     { "sWidth": "15%", "sType": "date" },
                     { "sWidth": "10%", "sType": "numeric" },
                     { "sWidth": "10%", "sType": "numeric" },
@@ -38,9 +38,8 @@
                 }
         );
 
-
         cj('#submit_now a').click( function() {
-          if (confirm('This action cannot be reversed.  Are you sure?') ) {
+          if (confirm('This action cannot be reversed. Are you sure?') ) {
             ;
           } else {
             return false;
@@ -84,8 +83,8 @@
             <td>{$submission.batch_name}</td>
             <td>{$submission.created_date}</td>
             <td>{$submission.submission_date}</td>
-            <td>{$submission.total_amount}</td>
-            <td>{$submission.total_gift_aid_amount}</td>
+            <td>{$submission.total_amount|crmMoney:$currency}</td>
+            <td>{$submission.total_gift_aid_amount|crmMoney:$currency}</td>
             <td>{$submission.hmrc_response}</td>
           </tr>
           </tbody>

@@ -217,7 +217,7 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
     return NULL;
   }
 
-  private function _get_batch_record_sql ($batch_id = NULL) {
+  private function _get_batch_record_sql($batch_id = NULL) {
     $sWhere = empty($batch_id) ? NULL : ' AND batch.id = ' . $batch_id;
     $sQuery = "
       SELECT batch.id                                        AS batch_id
@@ -334,12 +334,12 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       }
       $aSubmission = [
         'batch_id'              => $p_batch_id
-      , 'batch_name'            => $oBatchDao->batch_name
-      , 'created_date'          => $oBatchDao->created_date
-      , 'submision_date'        => $dSubmissionDate
-      , 'total_amount'          => $oBatchDao->total_amount
-      , 'total_gift_aid_amount' => $oBatchDao->total_gift_aid_amount
-      , 'hmrc_response'         => $sResponseStatus
+        , 'batch_name'            => $oBatchDao->batch_name
+        , 'created_date'          => $oBatchDao->created_date
+        , 'submision_date'        => $dSubmissionDate
+        , 'total_amount'          => $oBatchDao->total_amount
+        , 'total_gift_aid_amount' => $oBatchDao->total_gift_aid_amount
+        , 'hmrc_response'         => $sResponseStatus
       ];
     }
 
@@ -374,44 +374,48 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
     $oHmrcGiftAid = new HmrcGiftAid();
     $rejectionIDs = [];
     $submissionId = '';
-    if (!$this->is_submitted($p_batch_id)) {
-      // imacdonal Patch
+
+    if ($task == 'POLL') {
+      $aSubmission = $this->_get_submission($p_batch_id);
+      if (empty($aSubmission)) {
+        Throw new CRM_Core_Exception("Cannot locate Submission record for batch: {$p_batch_id}");
+      }
+      $sEndPoint    = $aSubmission['response_end_point'];
+      $sCorrelation = $aSubmission['response_correlation_id'];
+      $oHmrcGiftAid = $oHmrcGiftAid->giftAidPoll($sEndPoint, $sCorrelation);
+      $aEndPoint         = $oHmrcGiftAid->getResponseEndpoint();
+      if (!$aEndPoint) {
+        CRM_Core_Session::setStatus('Could not get new status from HMRC.', E::SHORT_NAME);
+      }
+      else {
+        $sEndPoint = isset($aEndPoint['endpoint']) ? $aEndPoint['endpoint'] : NULL;
+        $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : NULL;
+        $submissionId = $this->_record_polling(
+          $aSubmission['id'],
+          $oHmrcGiftAid->getFullXMLRequest(),
+          $oHmrcGiftAid->getFullXMLResponse(),
+          $oHmrcGiftAid->getResponseQualifier(),
+          $this->_response_error_to_string($oHmrcGiftAid->getFullXMLResponse()),
+          $sEndPoint,
+          $sEndPointInterval,
+          $oHmrcGiftAid->getResponseCorrelationId(),
+          $oHmrcGiftAid->getTransactionId(),
+          $oHmrcGiftAid->getGatewayTimestamp()
+        );
+      }
+    }
+    else {
       $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejectionIDs, $isValidate);
+
+      // We're in validation mode? Don't record submission
       if ($isValidate) {
         return [NULL, $rejectionIDs];
       }
 
-      if ($oHmrcGiftAid->responseHasErrors() === FALSE) {
-        /**
-         * TODO: to handle error in submission.
-         */
-      }
-      $aEndPoint         = $oHmrcGiftAid->getResponseEndpoint();
-      $sEndPoint         = isset($aEndPoint['endpoint']) ? $aEndPoint['endpoint'] : null ;
-      $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : null ;
-
-      $submissionId = $this->_record_submission( $p_batch_id
-        , $oHmrcGiftAid->getFullXMLRequest()
-        , $oHmrcGiftAid->getFullXMLResponse()
-        , $oHmrcGiftAid->getResponseQualifier()
-        , $this->_response_error_to_string($oHmrcGiftAid->getFullXMLResponse())
-        , $sEndPoint
-        , $sEndPointInterval
-        , $oHmrcGiftAid->getResponseCorrelationId()
-        , $oHmrcGiftAid->getTransactionId()
-        , $oHmrcGiftAid->getGatewayTimestamp()
-      );
-    } else {
-      if ($task == 'RESUBMIT') {
-        $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejectionIDs);
-        if ($oHmrcGiftAid->responseHasErrors() === FALSE) {
-          /**
-           * TODO: to handle error in submission.
-           */
-        }
-        $aEndPoint         = $oHmrcGiftAid->getResponseEndpoint();
-        $sEndPoint         = isset($aEndPoint['endpoint']) ? $aEndPoint['endpoint'] : null ;
-        $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : null ;
+      if (!$this->is_submitted($p_batch_id) || ($task === 'RESUBMIT')) {
+        $aEndPoint = $oHmrcGiftAid->getResponseEndpoint();
+        $sEndPoint = isset($aEndPoint['endpoint']) ? $aEndPoint['endpoint'] : NULL;
+        $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : NULL;
         $submissionId = $this->_record_submission($p_batch_id
           , $oHmrcGiftAid->getFullXMLRequest()
           , $oHmrcGiftAid->getFullXMLResponse()
@@ -423,34 +427,6 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
           , $oHmrcGiftAid->getTransactionId()
           , $oHmrcGiftAid->getGatewayTimestamp()
         );
-      } else if ($task == 'POLL') {
-        $aSubmission = $this->_get_submission($p_batch_id);
-        if (empty($aSubmission)) {
-          Throw new CRM_Core_Exception("Cannot locate Submission record for batch: {$p_batch_id}");
-        }
-        $sEndPoint    = $aSubmission['response_end_point'];
-        $sCorrelation = $aSubmission['response_correlation_id'];
-        $oHmrcGiftAid = $oHmrcGiftAid->giftAidPoll($sEndPoint, $sCorrelation);
-        $aEndPoint         = $oHmrcGiftAid->getResponseEndpoint();
-        if (!$aEndPoint) {
-          CRM_Core_Session::setStatus('Could not get new status from HMRC.', E::SHORT_NAME);
-        }
-        else {
-          $sEndPoint = isset($aEndPoint['endpoint']) ? $aEndPoint['endpoint'] : NULL;
-          $sEndPointInterval = isset($aEndPoint['interval']) ? $aEndPoint['interval'] : NULL;
-          $submissionId = $this->_record_polling(
-            $aSubmission['id'],
-            $oHmrcGiftAid->getFullXMLRequest(),
-            $oHmrcGiftAid->getFullXMLResponse(),
-            $oHmrcGiftAid->getResponseQualifier(),
-            $this->_response_error_to_string($oHmrcGiftAid->getFullXMLResponse()),
-            $sEndPoint,
-            $sEndPointInterval,
-            $oHmrcGiftAid->getResponseCorrelationId(),
-            $oHmrcGiftAid->getTransactionId(),
-            $oHmrcGiftAid->getGatewayTimestamp()
-          );
-        }
       }
     }
 
@@ -486,16 +462,18 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
 
     while ($oDao->fetch()) {
       $responseErrors = $responseMessage = $sQuerySt = $linkLabel = $sUrl = '';
-      $cLink = $oDao->created_date."<br />";
+      $cLink = '';
       if (!$this->is_submitted($oDao->batch_id)) {
+        $statusText = 'Not submitted';
         $validateUrl = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission', "id=$oDao->batch_id&validate=1");
         $cLink .= "<a href='{$validateUrl}'>" . E::ts('Validate') . "</a><br />";
       } else {
+        $statusText = 'Submitted';
         $aSubmission = $this->_get_submission($oDao->batch_id);
         $pRequest = $this->_get_polling_request($aSubmission['id']);
         // Allow resubmission of the batch, if previously reported as 'error'
         if ($this->allow_resubmission($oDao->batch_id, $pRequest)) {
-          $sQueryStr = "id=$oDao->batch_id&task=RESUBMIT";
+          $sQueryStr = "id=$oDao->batch_id&submit=1&task=RESUBMIT";
           $linkLabel = 'Re-Submit now';
           // Get submission response error
           if ($aSubmission['response_qualifier'] == 'error') {
@@ -507,18 +485,17 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
             $responseErrors = $pRequest['response_xml'];
           }
         } else {
+          // Submitted, not allowed to re-submit
           $sQueryStr = "id=$oDao->batch_id&task=POLL";
           $linkLabel = 'Get new status';
         }
 
         if (isset($pRequest['response_qualifier']) && $pRequest['response_qualifier'] == 'response') {
-          $sQueryStr = '';
-          $linkLabel = '';
           $responseMessage = $pRequest['response_xml'];
         }
-        if (!empty($sQueryStr)) {
+        else {
           $sUrl  = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission', $sQueryStr);
-          $cLink .= sprintf( "<a href='%s'>{$linkLabel}</a><br />", $sUrl);
+          $cLink .= sprintf("<a href='%s' class='action-item'>{$linkLabel}</a><br />", $sUrl);
         }
       }
 
@@ -555,13 +532,13 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       }
 
       $aBatches[] = [
-        'batch_id'              => $oDao->batch_id
-      , 'batch_name'            => $oDao->batch_name
-      , 'created_date'          => $oDao->created_date
-      , 'total_amount'          => $oDao->total_amount
-      , 'total_gift_aid_amount' => $oDao->total_gift_aid_amount
-      , 'action'                => $cLink
-      , 'report_link'           => $this->getReportLink($oDao->batch_id),
+        'batch_id'              => $oDao->batch_id,
+        'batch_name'            => $oDao->batch_name,
+        'created_date'          => $oDao->created_date,
+        'total_amount'          => $oDao->total_amount,
+        'total_gift_aid_amount' => $oDao->total_gift_aid_amount,
+        'status'                => $statusText,
+        'action'                => $cLink . $this->getReportLink($oDao->batch_id)
       ];
     }
 
@@ -589,7 +566,7 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
 
     if (\Civi::$statics[__CLASS__]['reportURL']) {
       $rLink = CRM_Utils_System::url(\Civi::$statics[__CLASS__]['reportURL'], "batch_id={$batchID}&force=1&reset=1");
-      $reportLink = sprintf("<a href='%s' target='_blank' class='action-item'>View</a>", $rLink);
+      $reportLink = sprintf("<a href='%s' target='_blank' class='action-item'>Rejection report</a>", $rLink);
     }
     return $reportLink ?? '';
   }
@@ -601,13 +578,13 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
     $isValidate = CRM_Utils_Request::retrieveValue('validate', 'Boolean', FALSE);
     $isSubmit = CRM_Utils_Request::retrieveValue('submit', 'Boolean', FALSE);
 
-
     if (empty($iBatchId)) {
       $batches = $this->get_all_giftaid_batch();
-      $tableHeaders = ['Batch Name', 'Date Created', 'Total', 'Gift Aid Amount', 'Status', 'Rejection Report'];
+      $tableHeaders = ['Batch Name', 'Date Created', 'Total', 'Gift Aid Amount', 'Status', 'Actions'];
       $this->assign('tableHeaders', $tableHeaders);
       $this->assign('batches', $batches);
-      $sTask = 'VIEW_BATCH';
+      $this->assign('currency', 'GBP');
+      $sTask = 'VIEW_BATCHES';
     }
     else {
       list($processed, $rejectionIDs) = $this->process_batch($iBatchId, $task, $isValidate);
@@ -623,7 +600,6 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       }
       elseif ($isSubmit) {
         // We can now submit the batch to HMRC
-        list($processed, $rejectionIDs) = $this->process_batch($iBatchId, $task, FALSE);
         $sTask = 'SUBMITTED';
         $this->assign('submission', $processed);
       }
