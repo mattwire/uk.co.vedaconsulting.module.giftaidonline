@@ -488,10 +488,8 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       $responseErrors = $responseMessage = $sQuerySt = $linkLabel = $sUrl = '';
       $cLink = $oDao->created_date."<br />";
       if (!$this->is_submitted($oDao->batch_id)) {
-        $submitUrl  = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission', "id=$oDao->batch_id");
         $validateUrl = CRM_Utils_System::url( 'civicrm/giftaid/onlinesubmission', "id=$oDao->batch_id&validate=1");
         $cLink .= "<a href='{$validateUrl}'>" . E::ts('Validate') . "</a><br />";
-        $cLink .= "<a href='{$submitUrl}'>" . E::ts('Submit now') . "</a>";
       } else {
         $aSubmission = $this->_get_submission($oDao->batch_id);
         $pRequest = $this->_get_polling_request($aSubmission['id']);
@@ -613,11 +611,14 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       $this->assign('batchID', $iBatchId);
       $this->assign('batchTitle', civicrm_api3('Batch', 'getvalue', ['id' => $iBatchId, 'return' => 'title']));
       if ($isValidate && !empty($rejectionIDs)) {
+        $sTask = 'INVALID';
         $this->assign('rejectionCount', count($rejectionIDs));
         $this->assign('reportLink', $this->getReportLink($iBatchId));
-        $sTask = 'VIEW_INVALID';
       }
-      elseif (!$isValidate) {
+      elseif ($isValidate) {
+        $sTask = 'VALID';
+      }
+      else {
         // We can now submit the batch to HMRC
         // @todo show a "submit option"
         $sTask = 'VIEW_SUBMISSION';
