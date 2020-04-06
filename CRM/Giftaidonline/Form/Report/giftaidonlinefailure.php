@@ -21,196 +21,112 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
   protected $_customGroupGroupBy = FALSE;
 
   public function __construct() {
-    if (isset($_GET['batch_id'])) {
-      $this->_columns = [
-        'civicrm_contact' => [
-          'dao' => 'CRM_Contact_DAO_Contact',
-          'fields' => [
-            'id' => [
-              'name' => 'id',
-              'title' => 'Contact Id',
-              'required'    => TRUE,
-            ],
-            'sort_name' => [
-              'title'       => ts('Contact Name'),
-              'required'    => TRUE,
-              'default'     => TRUE,
-              'no_repeat'   => TRUE,
-            ],
-            'first_name' => [
-              'title'       => ts('First Name'),
-              'no_repeat'   => TRUE,
-            ],
-            'id' => [
-              'no_display'  => TRUE,
-              'required'    => TRUE,
-            ],
-            'last_name' => [
-              'title'       => ts('Last Name'),
-              'no_repeat'   => TRUE,
+    $this->_columns = [
+      'civicrm_contact' => [
+        'dao' => 'CRM_Contact_DAO_Contact',
+        'fields' => [
+          'id' => [
+            'name' => 'id',
+            'title' => 'Contact Id',
+            'required'    => TRUE,
+          ],
+          'sort_name' => [
+            'title'       => ts('Contact Name'),
+            'required'    => TRUE,
+            'default'     => TRUE,
+            'no_repeat'   => TRUE,
+          ],
+          'first_name' => [
+            'title'       => ts('First Name'),
+            'no_repeat'   => TRUE,
+          ],
+          'id' => [
+            'no_display'  => TRUE,
+            'required'    => TRUE,
+          ],
+          'last_name' => [
+            'title'       => ts('Last Name'),
+            'no_repeat'   => TRUE,
+          ],
+        ],
+      ],
+      'civicrm_gift_aid_rejected_contributions' => [
+        'fields' => [
+          'rejection_reason' => [
+            'name'        => 'rejection_reason',
+            'title'       => 'Rejection Reason',
+            'required'    => TRUE,
+            'default'     => TRUE,
+            'no_repeat'   => TRUE,
+          ],
+          'rejection_detail' => [
+            'name'        => 'rejection_detail',
+            'title'       => 'Rejection Detail',
+            'required'    => FALSE,
+            'default'     => TRUE,
+            'no_repeat'   => TRUE,
+          ],
+          'batch_id' => [
+            'name'     => 'batch_id',
+            'title'    => 'Batch Id',
+            'required' => TRUE,
+            'default'  => TRUE,
+            'no_repeat'=> TRUE,
+          ],
+          'contribution_id' => [
+            'name'     => 'contribution_id',
+            'title'    => 'Contribution Id',
+            'required' => TRUE,
+            'default'  => TRUE,
+            'no_repeat'=> FALSE,
+          ],
+        ],
+        'filters'   => [
+          'submission_id'    => [
+            'title'           => 'Submission',
+            'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
+            'options'         => CRM_Giftaidonline_Utils_Submission::getSubmissionIdTitle('id desc'),
+          ],
+        ],
+      ],
+      'civicrm_batch' => [
+        'dao'       => 'CRM_Batch_DAO_Batch',
+        'filters'   => [
+          'id'    => [
+            'title'           => 'Batch Name',
+            'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
+            'options'         => CRM_Civigiftaid_Utils_Contribution::getBatchIdTitle( 'id desc' ),
+          ],
+        ],
+      ],
+      'civicrm_contribution'  => [
+        'dao'      => 'CRM_Contribute_DAO_Contribution',
+        'fields'   => [
+          'id'   => [
+            'name'       => 'id',
+            'title'      => 'Contribution ID',
+            'no_display' => FALSE,
+            'default'    => TRUE,
+          ],
+          'total_amount'   => [
+            'title'      => ts('Total Amount'),
+            'default'    => TRUE,
+            'no_display' => FALSE,
+            'statistics' => [
+              'sum'        => ts('Total Amount'),
             ],
           ],
         ],
-        'civicrm_gift_aid_rejected_contributions' => [
-          'fields' => [
-            'rejection_reason' => [
-              'name'            => 'rejection_reason',
-              'title'           => 'Rejection Reason',
-              'required' => TRUE,
-              'default'     => TRUE,
-              'no_repeat'   => TRUE,
-            ],
-            'id' => [
-              'name'            => 'batch_id',
-              'title'           => 'Batch Id',
-              'required'        => TRUE,
-              'default'         => TRUE,
-              'no_repeat'       => TRUE,
-            ],
-          ],
-          'filters'   => [
-            'submission_id'    => [
-              'title'           => 'Submission',
-              'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
-              'options'         => CRM_Giftaidonline_Utils_Submission::getSubmissionIdTitle( 'id desc' ),
-              'default'         => [$_GET['submissionId']],
-              //'default'       => array(1),
-            ],
+        'grouping' => 'contri-fields',
+        'filters' => [
+          'total_sum' => [
+            'title'     => ts('Total Amount'),
+            'type'      => CRM_Report_Form::OP_INT,
+            'dbAlias'   => 'civicrm_contribution_total_amount_sum',
           ],
         ],
-        'civicrm_batch' => [
-          'dao'       => 'CRM_Batch_DAO_Batch',
-          'filters'   => [
-            'id'    => [
-              'title'           => 'Batch Name',
-              'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
-              'options'         => CRM_Civigiftaid_Utils_Contribution::getBatchIdTitle( 'id desc' ),
-              'default'         => [$_GET['batch_id']],
-              //'default'       => array(1),
-            ],
-          ],
-        ],
-        'civicrm_contribution'  => [
-          'dao'      => 'CRM_Contribute_DAO_Contribution',
-          'fields'   => [
-            'id'   => [
-              'name'       => 'id',
-              'title'      => 'Contribution ID',
-              'no_display' => FALSE,
-              'default'    => TRUE,
-            ],
-            'total_amount'   => [
-              'title'      => ts('Total Amount'),
-              'default'    => TRUE,
-              'no_display' => FALSE,
-              'statistics' => [
-                'sum'        => ts('Total Amount'),
-              ],
-            ],
-          ],
-          'grouping' => 'contri-fields',
-          'filters' => [
-            'total_sum' => [
-              'title'     => ts('Total Amount'),
-              'type'      => CRM_Report_Form::OP_INT,
-              'dbAlias'   => 'civicrm_contribution_total_amount_sum',
-            ],
-          ],
-        ],
-      ];
-    } else {
-      $this->_columns = [
-        'civicrm_contact' => [
-          'dao' => 'CRM_Contact_DAO_Contact',
-          'fields' => [
-            'id' => [
-              'name' => 'id',
-              'title' => 'Contact Id',
-              'required'    => TRUE,
-            ],
-            'sort_name' => [
-              'title'       => ts('Contact Name'),
-              'required'    => TRUE,
-              'default'     => TRUE,
-              'no_repeat'   => TRUE,
-            ],
-            'first_name' => [
-              'title'       => ts('First Name'),
-              'no_repeat'   => TRUE,
-            ],
-            'id' => [
-              'no_display'  => TRUE,
-              'required'    => TRUE,
-            ],
-            'last_name' => [
-              'title'       => ts('Last Name'),
-              'no_repeat'   => TRUE,
-            ],
-          ],
-        ],
-        'civicrm_gift_aid_rejected_contributions' => [
-          'fields' => [
-            'rejection_reason' => [
-              'name'     => 'rejection_reason',
-              'title'    => 'Rejection Reason',
-              'required' => TRUE,
-              'default'  => TRUE,
-              'no_repeat'=> TRUE,
-            ],
-            'batch_id' => [
-              'name'     => 'batch_id',
-              'title'    => 'Batch Id',
-              'required' => TRUE,
-              'default'  => TRUE,
-              'no_repeat'=> TRUE,
-            ],
-            'contribution_id' => [
-              'name'     => 'contribution_id',
-              'title'    => 'Contribution Id',
-              'required' => TRUE,
-              'default'  => TRUE,
-              'no_repeat'=> FALSE,
-            ],
-          ],
-          'filters'   => [
-            'submission_id'    => [
-              'title'           => 'Submission',
-              'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
-              'options'         => CRM_Giftaidonline_Utils_Submission::getSubmissionIdTitle( 'id desc' ),
-              'default'         => [$_GET['submissionId']],
-            ],
-          ],
-        ],
-        'civicrm_batch' => [
-          'dao'       => 'CRM_Batch_DAO_Batch',
-          'filters'   => [
-            'id'    => [
-              'title'           => 'Batch Name',
-              'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
-              'options'         => CRM_Civigiftaid_Utils_Contribution::getBatchIdTitle( 'id desc' ),
-            ],
-          ],
-        ],
-        'civicrm_contribution'  => [
-          'dao'      => 'CRM_Contribute_DAO_Contribution',
-          'fields'   => [
-            'contribution_id'   => [
-              'name'       => 'id',
-              'title'      => 'Contribution ID',
-              'no_display' => FALSE,
-            ],
-            'total_amount'   => [
-              'title'      => ts('Total Amount'),
-              'default'    => TRUE,
-              'no_display' => FALSE,
-              'statistics' => [
-                'sum'        => ts('Total Amount'),
-              ],
-            ],
-          ],
-        ],
-      ];
-    }
+      ],
+    ];
     parent::__construct();
   }
 
@@ -298,13 +214,13 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
     }else {
       $this->_where = "WHERE " . implode(' AND ', $clauses);
     }
-    $bId = isset($_GET['batch_id']) ? $_GET['batch_id'] : NULL ;
-    if($bId){
-      $this->_where = "WHERE {$this->_aliases['civicrm_batch']}.id IN (".$bId .")";
+    $batchID = CRM_Utils_Request::retrieveValue('batch_id', 'Positive', NULL, FALSE, 'GET');
+    if ($batchID) {
+      $this->_where = "WHERE {$this->_aliases['civicrm_batch']}.id IN ({$batchID})";
     }
-    $submissionId = isset($_GET['submissionId']) ? $_GET['submissionId'] : NULL ;
-    if($submissionId){
-      $this->_where = "WHERE {$this->_aliases['civicrm_gift_aid_rejected_contributions']}.submission_id IN (".$submissionId.")";
+    $submissionId = CRM_Utils_Request::retrieveValue('submissionId', 'Positive', NULL, FALSE, 'GET');
+    if ($submissionId) {
+      $this->_where = "WHERE {$this->_aliases['civicrm_gift_aid_rejected_contributions']}.submission_id IN ({$submissionId})";
     }
   }
 
@@ -342,64 +258,7 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
   public function alterDisplay(&$rows) {
     // custom code to alter rows
     $entryFound = FALSE;
-    $checkList = [];
     foreach ($rows as $rowNum => $row) {
-      /* PS 18032015
-       * Commented out this code
-       * Was causing duplicates messages for all contacts showing rejections
-       * The report is supposed to support finding all rejections per contact but doesnt seem to at the moment
-       * This requirement is to allow charities to focus on the highest reward i.e. if a person has given 1k GBP and we cant claim we should focus on them over someone who's give 1GBP
-      if (!empty($this->_noRepeats) && $this->_outputMode != 'csv') {
-          // not repeat contact display names if it matches with the one
-          // in previous row
-          $repeatFound = FALSE;
-          foreach ($row as $colName => $colVal) {
-              if(isset($_GET['batch_id'])){
-                  $bId = $_GET['batch_id'];
-                  $checkList[$colName][] = $colVal;
-                  $sQuery = "SELECT GROUP_CONCAT( DISTINCT {$this->_aliases['civicrm_gift_aid_rejected_contributions']}.rejection_reason SEPARATOR '<br>')as gift_rejection_reason FROM civicrm_gift_aid_rejected_contributions {$this->_aliases['civicrm_gift_aid_rejected_contributions']}
-                             WHERE batch_id = ".$bId;
-                  $dao = crm_core_dao::executeQuery($sQuery);
-                  $dao->fetch();
-                  $rReason = $dao->gift_rejection_reason;
-                  $rows[$rowNum]['civicrm_gift_aid_rejected_contributions_rejection_reason'] = $rReason;
-                  }elseif (!isset($_GET['batch_id'])) {
-                      $batchId = $row['civicrm_gift_aid_rejected_contributions_batch_id'];
-                      $checkList[$colName][] = $colVal;
-                      $sQuery = "SELECT GROUP_CONCAT( DISTINCT {$this->_aliases['civicrm_gift_aid_rejected_contributions']}.rejection_reason SEPARATOR '<br>')as gift_rejection_reasion FROM civicrm_gift_aid_rejected_contributions {$this->_aliases['civicrm_gift_aid_rejected_contributions']}
-                                 WHERE batch_id = ".$batchId;
-                      $dao = crm_core_dao::executeQuery($sQuery);
-                      $dao->fetch();
-                      $rReason = $dao->gift_rejection_reasion;
-                      $rows[$rowNum]['civicrm_gift_aid_rejected_contributions_rejection_reason'] = $rReason;
-                  }
-              if (in_array($colName, $this->_noRepeats)){
-                  $checkList[$colName][] = $colVal;
-              }
-          }
-      }
-      if ($this->_outputMode == 'csv') {
-          // not repeat contact display names if it matches with the one
-          // in previous row
-          $repeatFound = FALSE;
-          foreach ($row as $colName => $colVal) {
-              $giftId = $row['civicrm_gift_aid_rejected_contributions_id'];
-              if($giftId){
-                  $checkList[$colName][] = $colVal;
-                  $sQuery = "SELECT GROUP_CONCAT( DISTINCT {$this->_aliases['civicrm_gift_aid_rejected_contributions']}.rejection_reason SEPARATOR '<br>')as gift_rejection_reasion FROM civicrm_gift_aid_rejected_contributions {$this->_aliases['civicrm_gift_aid_rejected_contributions']}
-                            WHERE batch_id = ".$giftId;
-                  $dao = crm_core_dao::executeQuery($sQuery);
-                  $dao->fetch();
-                  $rReason = $dao->gift_rejection_reasion;
-                  $rows[$rowNum]['civicrm_gift_aid_rejected_contributions_rejection_reason'] = $rReason;
-              }
-              if (in_array($colName, $this->_noRepeats)){
-                  $checkList[$colName][] = $colVal;
-              }
-          }
-      }
-       * PS 18032015 End of Comment
-       */
       if (array_key_exists('civicrm_membership_membership_type_id', $row)) {
         if ($value = $row['civicrm_membership_membership_type_id']) {
           $rows[$rowNum]['civicrm_membership_membership_type_id'] = CRM_Member_PseudoConstant::membershipType($value, FALSE);
