@@ -1,4 +1,5 @@
-<div class="crm-section">
+<div class="crm-block">
+  <div class="crm-section">
   {if $task eq 'VIEW_BATCH'}
     <table id="batch_table">
       <thead>
@@ -64,7 +65,7 @@
     <div>
       {$poll_message}
     </div>
-  {elseif $task eq 'VIEW_SUBMISSION'}
+  {elseif $task eq 'SUBMITTED'}
     <form id="submission_frm">
       <div class="crm-block crm-form-block">
         <table id="submission_table">
@@ -124,9 +125,10 @@
       <a href="{crmURL p='civicrm/giftaid/onlinesubmission' q="id=$batchID&submit=1"}" class="action-item">Submit</a>
     </div>
   {/if}
+  </div>
 
   <div class="crm-section crm-giftaid-onlinesubmission-back">
-    <a href="{crmURL p='civicrm/giftaid/onlinesubmission' q="reset=1"}" class="action-item">Back to list of submissions</a>
+    <a href="{crmURL p='civicrm/giftaid/onlinesubmission' q="reset=1"}" class="button">Back to list of submissions</a>
   </div>
 
 </div>

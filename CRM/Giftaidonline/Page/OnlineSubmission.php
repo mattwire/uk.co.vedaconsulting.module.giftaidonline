@@ -599,6 +599,9 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
     $iBatchId = CRM_Utils_Request::retrieve('id', 'Positive');
     $task = CRM_Utils_Request::retrieve('task', 'String');
     $isValidate = CRM_Utils_Request::retrieveValue('validate', 'Boolean', FALSE);
+    $isSubmit = CRM_Utils_Request::retrieveValue('submit', 'Boolean', FALSE);
+
+
     if (empty($iBatchId)) {
       $batches = $this->get_all_giftaid_batch();
       $tableHeaders = ['Batch Name', 'Date Created', 'Total', 'Gift Aid Amount', 'Status', 'Rejection Report'];
@@ -618,10 +621,10 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       elseif ($isValidate) {
         $sTask = 'VALID';
       }
-      else {
+      elseif ($isSubmit) {
         // We can now submit the batch to HMRC
-        // @todo show a "submit option"
-        $sTask = 'VIEW_SUBMISSION';
+        list($processed, $rejectionIDs) = $this->process_batch($iBatchId, $task, FALSE);
+        $sTask = 'SUBMITTED';
         $this->assign('submission', $processed);
       }
     }

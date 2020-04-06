@@ -293,12 +293,17 @@ WHERE id=%5";
       INNER JOIN civicrm_value_gift_aid_submission value_gift_aid_submission   ON value_gift_aid_submission.entity_id  = contribution.id
       WHERE batch.id = %1
 EOD;
-    $aQueryParam          = [1 => [$pBatchId, 'Integer']];
-    $oDao                 = CRM_Core_DAO::executeQuery($cDonorSelect, $aQueryParam);
+    $queryParams          = [1 => [$pBatchId, 'Integer']];
+    $oDao                 = CRM_Core_DAO::executeQuery($cDonorSelect, $queryParams);
     $aDonors              = [];
     $aAddress['address']  = null;
     $aAddress['postcode'] = null;
 
+    // Remove existing validation errors for batch
+    $deleteSQL = "DELETE FROM civicrm_gift_aid_rejected_contributions WHERE batch_id=%1";
+    CRM_Core_DAO::executeQuery($deleteSQL, $queryParams);
+
+    // Now check each contribution in batch
     while ($oDao->fetch()) {
       $validationMsg = '';
       $validationDetail = [];
