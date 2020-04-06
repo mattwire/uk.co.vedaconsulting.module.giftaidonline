@@ -598,8 +598,8 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       elseif ($isValidate) {
         $sTask = 'VALID';
       }
-      elseif ($isSubmit) {
-        // We can now submit the batch to HMRC
+      elseif ($isSubmit || ($task === 'POLL')) {
+        // We have now submitted the batch to HMRC - view the results
         $sTask = 'SUBMITTED';
         $this->assign('submission', $processed);
       }

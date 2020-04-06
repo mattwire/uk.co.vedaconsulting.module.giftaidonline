@@ -60,10 +60,6 @@
       }
     </script>
   {/literal}
-  {elseif $task eq 'POLLING'}
-    <div>
-      {$poll_message}
-    </div>
   {elseif $task eq 'SUBMITTED'}
     <form id="submission_frm">
       <div class="crm-block crm-form-block">
