@@ -54,7 +54,7 @@ class HmrcGiftAid extends Hmrc {
       ,      setting.value                                   AS value
       FROM   civicrm_gift_aid_submission_setting setting
 EOD;
-    $oDao = CRM_Core_DAO::executeQuery( $cSettingsSelect, array() );
+    $oDao = CRM_Core_DAO::executeQuery( $cSettingsSelect, []);
     while ($oDao->fetch()) {
       $this->_Settings[$oDao->name] = $oDao->value;
     }
@@ -119,7 +119,9 @@ EOD;
     $aAddress['postcode'] = null;
 
     $bGetAddressFromDeclaration = stristr( $sSource, 'CONTRIBUTION' ) ? false : true;
-    if ( $bGetAddressFromDeclaration ) {
+    if ($bGetAddressFromDeclaration) {
+      // @fixme This needs to take into account eligible = yes, = now and past 4 years (1 and 3).
+      //   Otherwise we get empty addresses for valid declarations.
       $sSql =<<<SQL
               SELECT   id         AS id
               ,        address    AS address
@@ -131,9 +133,10 @@ EOD;
               ORDER BY start_date ASC
               LIMIT  1
 SQL;
-      $aParams = array( 1 => array( $p_contact_id               , 'Integer' )
-      , 2 => array( $p_contribution_receive_date, 'Timestamp'    )
-      );
+      $aParams = [
+        1 => [$p_contact_id, 'Integer'],
+        2 => [$p_contribution_receive_date, 'Timestamp']
+      ];
     } else {
       $sSql =<<<SQL
               SELECT   id        AS id
@@ -143,7 +146,7 @@ SQL;
               WHERE    entity_id  = %1
               LIMIT  1
 SQL;
-      $aParams = array( 1 => array( $p_contribution_id, 'Integer' ) );
+      $aParams = [1 => [$p_contribution_id, 'Integer']];
     }
     $oDao = CRM_Core_DAO::executeQuery( $sSql
       , $aParams
@@ -620,38 +623,44 @@ EOD;
             $irMarkReceipt = (string) $successResponse->IRmarkReceipt->Message;
           }
 
-          $responseMessage = array();
+          $responseMessage = [];
           foreach ($successResponse->Message AS $message) {
             $responseMessage[] = (string) $message;
           }
           $responseAcceptedTime = strtotime($successResponse->AcceptedTime);
 
           $declarationResponse = $successResponse->ResponseData->VATDeclarationResponse;
-          $declarationPeriod = array('id' => (string) $declarationResponse->Header->VATPeriod->PeriodId,
+          $declarationPeriod = [
+            'id' => (string) $declarationResponse->Header->VATPeriod->PeriodId,
             'start' => strtotime($declarationResponse->Header->VATPeriod->PeriodStartDate),
-            'end' => strtotime($declarationResponse->Header->VATPeriod->PeriodEndDate));
+            'end' => strtotime($declarationResponse->Header->VATPeriod->PeriodEndDate)
+          ];
 
           $paymentDueDate = strtotime($declarationResponse->Body->PaymentDueDate);
 
-          $paymentDetails = array('narrative' => (string) $declarationResponse->Body->PaymentNotification->Narrative,
-            'netvat' => (string) $declarationResponse->Body->PaymentNotification->NetVAT);
+          $paymentDetails = [
+            'narrative' => (string) $declarationResponse->Body->PaymentNotification->Narrative,
+            'netvat' => (string) $declarationResponse->Body->PaymentNotification->NetVAT
+          ];
 
           $paymentNotifcation = $successResponse->ResponseData->VATDeclarationResponse->Body->PaymentNotification;
           if (isset($paymentNotifcation->NilPaymentIndicator)) {
-            $paymentDetails['payment'] = array('method' => 'nilpayment', 'additional' => null);
+            $paymentDetails['payment'] = ['method' => 'nilpayment', 'additional' => null];
           } else if (isset($paymentNotifcation->RepaymentIndicator)) {
-            $paymentDetails['payment'] = array('method' => 'repayment', 'additional' => null);
+            $paymentDetails['payment'] = ['method' => 'repayment', 'additional' => null];
           } else if (isset($paymentNotifcation->DirectDebitPaymentStatus)) {
-            $paymentDetails['payment'] = array('method' => 'directdebit', 'additional' => strtotime($paymentNotifcation->DirectDebitPaymentStatus->CollectionDate));
+            $paymentDetails['payment'] = ['method' => 'directdebit', 'additional' => strtotime($paymentNotifcation->DirectDebitPaymentStatus->CollectionDate)];
           } else if (isset($paymentNotifcation->PaymentRequest)) {
-            $paymentDetails['payment'] = array('method' => 'payment', 'additional' => (string) $paymentNotifcation->PaymentRequest->DirectDebitInstructionStatus);
+            $paymentDetails['payment'] = ['method' => 'payment', 'additional' => (string) $paymentNotifcation->PaymentRequest->DirectDebitInstructionStatus];
           }
 
-          return array('message' => $responseMessage,
+          return [
+            'message' => $responseMessage,
             'irmark' => $irMarkReceipt,
             'accept_time' => $responseAcceptedTime,
             'period' => $declarationPeriod,
-            'payment' => $paymentDetails);
+            'payment' => $paymentDetails
+          ];
 
         } else if ($messageQualifier == 'acknowledgement') {
           $returnable = $this->getResponseEndpoint();
