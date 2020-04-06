@@ -235,91 +235,47 @@ SQL;
    * @return string|null
    * @throws \Exception
    */
-  private function logBadDonorRecord($batch_id
-    , $batch_name
-    , $created_date
-    , $contribution_id
-    , $contact_id
-    , $first_name
-    , $last_name
-    , $amount
-    , $gift_aid_amount
-    , $address
-    , $postcode
-    , $validation_msg
-    , $validation_detail
-  ) {
-    $validationDetailString = implode('; ', $validation_detail);
-    $sMessage =<<<EOF
-        batch_id: $batch_id
-      , batch_name: $batch_name
-      , created_date: $created_date
-      , contribution_id: $contribution_id
-      , contact_id: $contact_id
-      , first_name: $first_name
-      , last_name: $last_name
-      , amount: $amount
-      , gift_aid_amount: $gift_aid_amount
-      , address: $address
-      , postcode: $postcode
-      , message: $validation_msg
-      , detail: $validationDetailString
-EOF;
+  private function logBadDonorRecord($rejectionDetail) {
+    \Civi::log()->debug("Invalid Donor Record. Details ..." . print_r($rejectionDetail, TRUE));
 
-    CRM_Core_Error::debug_log_message( "Invalid Donor Record. Details ...\n$sMessage", TRUE );
-
-    $sSql =<<<EOF
-            INSERT INTO civicrm_gift_aid_rejected_contributions(
-              batch_id
-            , contribution_id
-            , rejection_reason
-            , rejection_detail
-            ) VALUES (
-              %1
-            , %2
-            , %3
-            , %4
-            );
-EOF;
-    $aQueryParam = [
-      1 => [$batch_id, 'Integer'],
-      2 => [$contribution_id, 'Integer'],
-      3 => [empty($validation_msg) ? '' : $validation_msg, 'String'],
-      4 => [$validationDetailString, 'String']
+    $queryParams = [
+      1 => [$rejectionDetail['batch_id'], 'Integer'],
+      2 => [$rejectionDetail['contribution_id'], 'Integer'],
+      3 => [$rejectionDetail['message'], 'String'],
+      4 => [$rejectionDetail['detail'], 'String']
     ];
 
-    $oDao = CRM_Core_DAO::executeQuery($sSql, $aQueryParam);
-    if (is_a($oDao, 'DB_Error')) {
-      CRM_Core_Error::fatal('Trying to create a new Submission record failed.');
+    // Check if we've already logged an error for this record? Match on batch_id and contribution_id
+    // Update it if we have, otherwise insert.
+    $selectSQL = "SELECT id FROM civicrm_gift_aid_rejected_contributions WHERE batch_id=%1 AND contribution_id=%2";
+    $dao = CRM_Core_DAO::executeQuery($selectSQL, $queryParams);
+    if ($dao->fetch()) {
+      $modifySQL = "UPDATE civicrm_gift_aid_rejected_contributions
+SET batch_id=%1, contribution_id=%2, rejection_reason=%3, rejection_detail=%4
+WHERE id=%5";
+      $queryParams[5] = [$dao->id, 'Positive'];
     }
-    $rejectionId = CRM_Core_DAO::singleValueQuery('SELECT LAST_INSERT_ID()');
+    else {
+      $modifySQL = "
+            INSERT INTO civicrm_gift_aid_rejected_contributions(
+              batch_id, contribution_id, rejection_reason, rejection_detail)
+            VALUES (%1, %2, %3, %4)";
+    }
 
-    // Remove the contribution from the Batch
-    $cEntityDelete = <<<EOD
-      DELETE FROM civicrm_entity_batch
-      WHERE batch_id = %1
-      AND entity_id = %2
-      AND entity_table = 'civicrm_contribution'
-EOD;
-    $aQueryParam = [
-      1 => [$batch_id, 'Integer'],
-      2 => [$contribution_id, 'Integer']
-    ];
-
-    CRM_Core_DAO::executeQuery($cEntityDelete, $aQueryParam);
-
-    // hook to carry out other actions on removal of contribution from a gift aid online batch
-    CRM_Giftaidonline_Utils_Hook::invalidGiftAidOnlineContribution($batch_id, $contribution_id);
-
-    return $rejectionId;
+    $oDao = CRM_Core_DAO::executeQuery($modifySQL, $queryParams);
+    if (is_a($oDao, 'DB_Error')) {
+      Throw new CRM_Core_Exception('Trying to create a new Submission record failed.');
+    }
+    // Submission ID
+    return CRM_Core_DAO::singleValueQuery('SELECT LAST_INSERT_ID()');
   }
 
   /**
    * @param int $pBatchId
    * @param \XMLWriter $package
-   * @param array $rejections
+   * @param array $rejectionIDs
    */
-  private function build_giftaid_donors_xml($pBatchId, &$package, &$rejections, $isValidate = FALSE) {
+  private function build_giftaid_donors_xml($pBatchId, &$package, &$rejectionIDs, $isValidate = FALSE) {
     $cDonorSelect = <<<EOD
       SELECT batch.id                                                  AS batch_id
       ,      batch.title                                               AS batch_name
@@ -343,7 +299,7 @@ EOD;
     $aAddress['address']  = null;
     $aAddress['postcode'] = null;
 
-    while ( $oDao->fetch() ) {
+    while ($oDao->fetch()) {
       $validationMsg = '';
       $validationDetail = [];
 
@@ -402,39 +358,39 @@ EOD;
           'gift_aid_amount' => $oDao->amount
         ];
       } else {
-        if ($isValidate) {
-          $validationDetailString = implode('; ', $validationDetail);
-          $rejections[] = [
-            'batch_id' => $oDao->batch_id,
-            'batch_name' => $oDao->batch_name,
-            'created_date' => $oDao->created_date,
-            'contribution_id' => $oDao->contribution_id,
-            'contact_id' => $oDao->contact_id,
-            'first_name' => $oDao->first_name,
-            'last_name' => $oDao->last_name,
-            'amount' => $oDao->amount,
-            'gift_aid_amount' => $oDao->gift_aid_amount,
-            'address' => $aAddress['address'],
-            'postcode' => $aAddress['postcode'],
-            'message' => $validationMsg,
-            'detail' => $validationDetailString
+        $validationDetailString = implode('; ', $validationDetail);
+        $rejectionDetail = [
+          'batch_id' => $oDao->batch_id,
+          'batch_name' => $oDao->batch_name,
+          'created_date' => $oDao->created_date,
+          'contribution_id' => $oDao->contribution_id,
+          'contact_id' => $oDao->contact_id,
+          'first_name' => $oDao->first_name,
+          'last_name' => $oDao->last_name,
+          'amount' => $oDao->amount,
+          'gift_aid_amount' => $oDao->gift_aid_amount,
+          'address' => $aAddress['address'],
+          'postcode' => $aAddress['postcode'],
+          'message' => $validationMsg ?? '',
+          'detail' => $validationDetailString ?? ''
+        ];
+        $rejectionIDs[] = self::logBadDonorRecord($rejectionDetail);
+        if (!$isValidate) {
+          // Remove the contribution from the Batch
+          $sqlEntityBatchDelete = "
+      DELETE FROM civicrm_entity_batch
+      WHERE batch_id = %1
+      AND entity_id = %2
+      AND entity_table = 'civicrm_contribution'
+";
+          $aQueryParam = [
+            1 => [$rejectionDetail['batch_id'], 'Integer'],
+            2 => [$rejectionDetail['contribution_id'], 'Integer']
           ];
-        }
-        else {
-          $rejections[] = self::logBadDonorRecord($oDao->batch_id
-            , $oDao->batch_name
-            , $oDao->created_date
-            , $oDao->contribution_id
-            , $oDao->contact_id
-            , $oDao->first_name
-            , $oDao->last_name
-            , $oDao->amount
-            , $oDao->gift_aid_amount
-            , $aAddress['address']
-            , $aAddress['postcode']
-            , $validationMsg
-            , $validationDetail
-          );
+          CRM_Core_DAO::executeQuery($sqlEntityBatchDelete, $aQueryParam);
+
+          // hook to carry out other actions on removal of contribution from a gift aid online batch
+          CRM_Giftaidonline_Utils_Hook::invalidGiftAidOnlineContribution($rejectionDetail['batch_id'], $rejectionDetail['contribution_id']);
         }
       }
     }
@@ -456,9 +412,9 @@ EOD;
   /**
    * @param int $pBatchId
    * @param \XMLWriter $package
-   * @param array $rejections
+   * @param array $rejectionIDs
    */
-  private function build_claim_xml($pBatchId, &$package, &$rejections, $isValidate = FALSE) {
+  private function build_claim_xml($pBatchId, &$package, &$rejectionIDs, $isValidate = FALSE) {
     $cClaimOrgName         = $this->_Settings['CLAIMER_ORG_NAME'];
     $cClaimOrgHmrcref      = $this->_Settings['CHAR_ID'];
     $cRegulatorName        = $this->_Settings['CLAIMER_ORG_REGULATOR_NAME'];
@@ -474,7 +430,7 @@ EOD;
     $package->writeElement( 'RegNo'  , $cRegulatorNo     );
     $package->endElement(); # Regulator
     $package->startElement(   'Repayment'                  );
-    $this->build_giftaid_donors_xml($pBatchId, $package, $rejections, $isValidate);
+    $this->build_giftaid_donors_xml($pBatchId, $package, $rejectionIDs, $isValidate);
     $package->writeElement( 'EarliestGAdate'  , '2012-01-01' );
     $package->endElement(); # Repayment
     $package->startElement(   'GASDS'                                      );
@@ -488,13 +444,13 @@ EOD;
    * Build and send the XML for the gift-aid submission
    *
    * @param int $pBatchId
-   * @param array $rejections
+   * @param array $rejectionIDs
    * @param bool $send
    *   If set to FALSE will not be submitted - set this for testing/validating data for submission
    *
    * @return bool
    */
-  public function giftAidSubmit($pBatchId, &$rejections, $isValidate = FALSE) {
+  public function giftAidSubmit($pBatchId, &$rejectionIDs, $isValidate = FALSE) {
     $cChardId              = $this->_Settings['CHAR_ID'];
     $cOrganisation         = 'IR';
     $cClientUri            = $this->_Settings['VENDOR_ID'];
@@ -554,7 +510,7 @@ EOD;
     $package->writeElement( 'Phone', $cAuthOffPhone );
     $package->endElement(); #AuthOfficial
     $package->writeElement( 'Declaration', $cDeclaration );
-    $this->build_claim_xml($pBatchId, $package, $rejections, $isValidate);
+    $this->build_claim_xml($pBatchId, $package, $rejectionIDs, $isValidate);
     $package->endElement(); #R68
     $package->endElement(); #IRenvelope
 

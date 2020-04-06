@@ -371,13 +371,13 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
    */
   public function process_batch($p_batch_id, $task = NULL, $isValidate = FALSE) {
     $oHmrcGiftAid = new HmrcGiftAid();
-    $rejections = [];
+    $rejectionIDs = [];
     $submissionId = '';
     if (!$this->is_submitted($p_batch_id)) {
       // imacdonal Patch
-      $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejections, $isValidate);
+      $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejectionIDs, $isValidate);
       if ($isValidate) {
-        return $rejections;
+        return $rejectionIDs;
       }
 
       if ($oHmrcGiftAid->responseHasErrors() === FALSE) {
@@ -402,7 +402,7 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
       );
     } else {
       if ($task == 'RESUBMIT') {
-        $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejections);
+        $oHmrcGiftAid->giftAidSubmit($p_batch_id, $rejectionIDs);
         if ($oHmrcGiftAid->responseHasErrors() === FALSE) {
           /**
            * TODO: to handle error in submission.
@@ -454,8 +454,8 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
     }
 
     // Update submission_id in rejected contributions table
-    if (!empty($rejections) && !empty($submissionId)) {
-      self::update_submission_id_for_rejections($rejections, $submissionId);
+    if (!empty($rejectionIDs) && !empty($submissionId)) {
+      self::update_submission_id_for_rejections($rejectionIDs, $submissionId);
     }
 
     $aSubmission = $this->_build_submission($p_batch_id, $oHmrcGiftAid);
@@ -466,24 +466,14 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
    * Function to update submission_id in civicrm_gift_aid_rejected_contributions table
    * in order to report rejections based on submission
    *
-   * @param array $rejections
+   * @param array $rejectionIDs
    * @param int $submissionId
    */
-  public function update_submission_id_for_rejections($rejections, $submissionId) {
-    // Check if submission_id exists in the table
-    $columnExists = CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_gift_aid_rejected_contributions', 'submission_id');
-    if(!$columnExists) {
-      $query = "
-        ALTER TABLE civicrm_gift_aid_rejected_contributions
-        ADD submission_id int(10) unsigned AFTER batch_id";
-      CRM_Core_DAO::executeQuery($query);
-    }
-
-    $rejectionIds = implode(',', $rejections);
+  public function update_submission_id_for_rejections($rejectionIDs, $submissionId) {
     $updateQuery = "UPDATE civicrm_gift_aid_rejected_contributions SET submission_id = %1 WHERE id IN (%2)";
     $updateParams = [
       '1' => [$submissionId, 'Integer'],
-      '2' => [$rejectionIds, 'String'],
+      '2' => [implode(',', $rejectionIDs), 'CommaSeparatedIntegers'],
     ];
     CRM_Core_DAO::executeQuery($updateQuery, $updateParams);
   }

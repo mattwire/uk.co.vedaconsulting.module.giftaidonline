@@ -14,10 +14,15 @@ class CRM_Giftaidonline_Upgrader extends CRM_Giftaidonline_Upgrader_Base {
    * @throws Exception
    */
   public function upgrade_1800() {
-    $this->ctx->log->info('Add rejection_detail column to civicrm_gift_aid_rejected_contributions');
+    $this->ctx->log->info('Add columns to civicrm_gift_aid_rejected_contributions');
 
     if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_gift_aid_rejected_contributions', 'rejection_detail')) {
       CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_gift_aid_rejected_contributions` ADD COLUMN `rejection_detail` varchar(255) NOT NULL");
+    }
+    // Check if submission_id exists in the table
+    if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_gift_aid_rejected_contributions', 'submission_id')) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_gift_aid_rejected_contributions`
+        ADD COLUMN `submission_id` int(10) unsigned AFTER `batch_id`");
     }
     return TRUE;
   }
