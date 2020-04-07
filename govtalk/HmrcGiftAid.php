@@ -390,21 +390,7 @@ EOD;
         ];
         $rejectionIDs[] = self::logBadDonorRecord($rejectionDetail);
         if (!$isValidate) {
-          // Remove the contribution from the Batch
-          $sqlEntityBatchDelete = "
-      DELETE FROM civicrm_entity_batch
-      WHERE batch_id = %1
-      AND entity_id = %2
-      AND entity_table = 'civicrm_contribution'
-";
-          $aQueryParam = [
-            1 => [$rejectionDetail['batch_id'], 'Integer'],
-            2 => [$rejectionDetail['contribution_id'], 'Integer']
-          ];
-          CRM_Core_DAO::executeQuery($sqlEntityBatchDelete, $aQueryParam);
-
-          // hook to carry out other actions on removal of contribution from a gift aid online batch
-          CRM_Giftaidonline_Utils_Hook::invalidGiftAidOnlineContribution($rejectionDetail['batch_id'], $rejectionDetail['contribution_id']);
+          CRM_Giftaidonline_Batch::removeContributionFromBatch($rejectionDetail['batch_id'], $rejectionDetail['contribution_id']);
         }
       }
     }

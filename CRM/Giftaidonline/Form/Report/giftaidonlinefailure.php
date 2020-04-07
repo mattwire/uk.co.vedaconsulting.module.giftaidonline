@@ -20,6 +20,11 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
   protected $_customGroupExtends = ['Membership'];
   protected $_customGroupGroupBy = FALSE;
 
+  /**
+   * @var int
+   */
+  protected $batchID;
+
   public function __construct() {
     $this->_columns = [
       'civicrm_contact' => [
@@ -75,6 +80,7 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
             'title'           => 'Submission',
             'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
             'options'         => CRM_Giftaidonline_Utils_Submission::getSubmissionIdTitle('id desc'),
+            'type' => CRM_Utils_Type::T_INT,
           ],
         ],
       ],
@@ -85,6 +91,7 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
             'title'           => 'Batch Name',
             'operatorType'    => CRM_Report_Form::OP_MULTISELECT,
             'options'         => CRM_Civigiftaid_Utils_Contribution::getBatchIdTitle( 'id desc' ),
+            'type' => CRM_Utils_Type::T_INT,
           ],
         ],
       ],
@@ -96,6 +103,7 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
             'title'      => 'Contribution ID',
             'no_display' => FALSE,
             'default'    => TRUE,
+            'required' => TRUE,
           ],
           'total_amount'   => [
             'title'      => ts('Total Amount'),
@@ -104,6 +112,12 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
             'statistics' => [
               'sum'        => ts('Total Amount'),
             ],
+          ],
+          'actionlinks' => [
+            'title' => ts('Actions'),
+            'default' => TRUE,
+            'required' => TRUE,
+            'name' => 'id',
           ],
         ],
         'grouping' => 'contri-fields',
@@ -120,6 +134,20 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
   }
 
   public function preProcess() {
+    $this->batchID = CRM_Utils_Request::retrieveValue('batch_id', 'Positive', NULL, FALSE, 'GET');
+    if ($this->batchID) {
+      $this->_force = 1;
+    }
+    $removeFromBatchContributionID = CRM_Utils_Request::retrieveValue('remove_contribution_id', 'Positive', NULL, FALSE, 'GET');
+    if ($this->batchID && $removeFromBatchContributionID) {
+      $removed = CRM_Giftaidonline_Batch::removeContributionFromBatch($this->batchID, $removeFromBatchContributionID);
+      if (!$removed) {
+        CRM_Core_Session::setStatus("Contribution ID {$removeFromBatchContributionID} is not in batch {$this->batchID}", 'Could not remove from batch', 'alert');
+      }
+      else {
+        CRM_Core_Session::setStatus("Removed contribution ID {$removeFromBatchContributionID} from batch {$this->batchID}", 'Removed from batch', 'success');
+      }
+    }
     $this->assign('reportTitle', ts('Gift Aid Online Failure'));
     parent::preProcess();
   }
@@ -203,9 +231,8 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
     }else {
       $this->_where = "WHERE " . implode(' AND ', $clauses);
     }
-    $batchID = CRM_Utils_Request::retrieveValue('batch_id', 'Positive', NULL, FALSE, 'GET');
-    if ($batchID) {
-      $this->_where = "WHERE {$this->_aliases['civicrm_batch']}.id IN ({$batchID})";
+    if ($this->batchID) {
+      $this->_where = "WHERE {$this->_aliases['civicrm_batch']}.id IN ({$this->batchID})";
     }
     $submissionId = CRM_Utils_Request::retrieveValue('submissionId', 'Positive', NULL, FALSE, 'GET');
     if ($submissionId) {
@@ -221,8 +248,8 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
     $statistics = parent::statistics($rows);
     $select     = "SELECT SUM( contribution_civireport.total_amount ) as amount";
     $sql        = "{$select} {$this->_from} {$this->_where}";
-    $dao        = CRM_Core_DAO::executeQuery( $sql );
-    if ( $dao->fetch( ) ) {
+    $dao        = CRM_Core_DAO::executeQuery($sql);
+    if ($dao->fetch()) {
       $statistics['counts']['amount'] = [
         'value' => $dao->amount,
         'title' => 'Total Amount',
@@ -244,8 +271,10 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
     $this->endPostProcess($rows);
   }
 
+  /**
+   * @param array $rows
+   */
   public function alterDisplay(&$rows) {
-    // custom code to alter rows
     foreach ($rows as $rowNum => $row) {
       if (array_key_exists('civicrm_contact_sort_name', $row)) {
         $url = CRM_Utils_System::url("civicrm/contact/view",
@@ -262,6 +291,21 @@ class CRM_Giftaidonline_Form_Report_giftaidonlinefailure extends CRM_Report_Form
         );
         $rows[$rowNum]['civicrm_contribution_contribution_id_link']  = $url;
         $rows[$rowNum]['civicrm_contribution_contribution_id_hover'] = ts('View contribution');
+      }
+      if (array_key_exists('civicrm_contribution_actionlinks', $row)) {
+        if ($this->batchID) {
+          $urlQuery = [
+            'force' => 1,
+            'reset' => 1,
+            'remove_contribution_id' => $rows[$rowNum]['civicrm_contribution_contribution_id'],
+            'batch_id' => $this->batchID,
+          ];
+          $url = CRM_Utils_System::url("civicrm/report/instance/{$this->_id}", $urlQuery);
+          $rows[$rowNum]['civicrm_contribution_actionlinks'] = "<a href='{$url}'>Remove from batch</a>";
+        }
+        else {
+          $rows[$rowNum]['civicrm_contribution_actionlinks'] = '';
+        }
       }
     }
   }
