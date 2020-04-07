@@ -120,8 +120,10 @@ EOD;
 
     $bGetAddressFromDeclaration = stristr( $sSource, 'CONTRIBUTION' ) ? false : true;
     if ($bGetAddressFromDeclaration) {
-      // @fixme This needs to take into account eligible = yes, = now and past 4 years (1 and 3).
-      //   Otherwise we get empty addresses for valid declarations.
+      // We need to get the declaration that was current at the time that the contribution was made.
+      // Look for a declaration that:
+      //   - was eligible (ie. eligible_for_gift_aid is 1 or 3 and not 0).
+      //   - contribution receive date was between start and end date for declaration.
       $sSql =<<<SQL
               SELECT   id         AS id
               ,        address    AS address
@@ -129,7 +131,8 @@ EOD;
               FROM     civicrm_value_gift_aid_declaration
               WHERE    entity_id  =  %1
               AND      start_date <= %2
-              AND      eligible_for_gift_aid = 1
+              AND      (end_date IS NULL OR end_date >= %2)
+              AND      eligible_for_gift_aid > 0
               ORDER BY start_date ASC
               LIMIT  1
 SQL;
