@@ -6,14 +6,39 @@ For information about the latest improvements, please visit: https://vedaconsult
 
 ## Requirements
 * The GiftAid extension from https://github.com/mattwire/uk.co.compucorp.civicrm.giftaid
-* CiviCRM 5.13+
+* CiviCRM 5.19+
 
 ## Licensing
 The extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 ## Release Notes
 
-### 1.8 NOT YET RELEASED
+### 1.8
+
+* Fix postcode validation and support 'X' for postcode which can be entered for non UK addresses.
+* Add navigation menu items
+* Update onlinesubmission form URL
+* Log/update validation errors if submitting or validating so they show in reports
+* Display results of submitted for POLL task - it is not clear if POLL still works as it does not work with HMRC in dev mode.
+* Fix [civicrm.giftaid#4](https://github.com/mattwire/uk.co.compucorp.civicrm.giftaid/issues/4) getting address from declaration when declaration is 'Yes and past 4 years'.
+* Implement function to remove from batch and add link to rejection report (now removes from `civicrm_entity_batch`, contribution `batch_name` field and the rejection report).
+
+##### Add a validate/submit workflow:
+
+![validate form](docs/images/validateform.png)
+
+  * When you have a not yet submitted batch it is no longer possible to submit without validating.
+  * First you click on the validate link.
+  * Then, once you've resolved the validation errors you can submit.
+
+##### Rejection report
+
+![rejection report](docs/images/rejectionreport.png)
+
+* Fix name clashes in rejection report
+* Log/update validation errors if submitting or validating so they show in reports
+* Add rejection detail column to rejection report
+* Add link to contribution on rejection report
 
 ### 1.7.0
 
