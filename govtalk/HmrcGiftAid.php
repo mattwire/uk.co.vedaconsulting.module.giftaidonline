@@ -54,7 +54,7 @@ class HmrcGiftAid extends Hmrc {
       ,      setting.value                                   AS value
       FROM   civicrm_gift_aid_submission_setting setting
 EOD;
-    $oDao = CRM_Core_DAO::executeQuery( $cSettingsSelect, []);
+    $oDao = CRM_Core_DAO::executeQuery($cSettingsSelect, []);
     while ($oDao->fetch()) {
       $this->_Settings[$oDao->name] = $oDao->value;
     }
@@ -68,14 +68,14 @@ EOD;
           , $govTalkSenderId
           , $govTalkPassword
         );
-        $this->setTestFlag( true );
+        $this->setTestFlag(TRUE);
         break;
       default:
         parent::__construct( 'https://transaction-engine.tax.service.gov.uk/submission'
           , $govTalkSenderId
           , $govTalkPassword
         );
-        $this->setTestFlag( false );
+        $this->setTestFlag(FALSE);
         break;
     }
 
@@ -89,23 +89,26 @@ EOD;
    * @return boolean True if the CorrelationID is valid and set, false if it's invalid (and therefore not set).
    * @see function getResponseCorrelationId
    */
-  public function setMessageCorrelationId( $messageCorrelationId = null ) {
-    if ( empty( $messageCorrelationId ) ) {
-      return true;
+  public function setMessageCorrelationId($messageCorrelationId = NULL) {
+    if (empty($messageCorrelationId)) {
+      return TRUE;
     }
-    return parent::setMessageCorrelationId( $messageCorrelationId);
+    return parent::setMessageCorrelationId($messageCorrelationId);
   }
 
   /* Public methods. */
 
-  private function getHouseNo( $p_address_line ) {
-    /*
-     * split the phrase by any number of commas or space characters,
-     * which include " ", \r, \t, \n and \f
-     */
-    $aAddress = preg_split( "/[,\s]+/", $p_address_line );
-    if ( empty( $aAddress ) ) {
-      return null;
+  /**
+   * split the phrase by any number of commas or space characters,
+   * which include " ", \r, \t, \n and \f
+   * @param string $p_address_line
+   *
+   * @return string|null
+   */
+  private function getHouseNo($p_address_line) {
+    $aAddress = preg_split("/[,\s]+/", $p_address_line);
+    if (empty($aAddress)) {
+      return NULL;
     } else {
       return $aAddress[0];
     }
@@ -114,11 +117,11 @@ EOD;
   private function getDonorAddress( $p_contact_id, $p_contribution_id,  $p_contribution_receive_date ) {
     $oSetting             = new CRM_Giftaidonline_Page_giftAidSubmissionSettings();
     $sSource              = $oSetting->get_contribution_details_source();
-    $aAddress['id']       = null;
-    $aAddress['address']  = null;
-    $aAddress['postcode'] = null;
+    $aAddress['id']       = NULL;
+    $aAddress['address']  = NULL;
+    $aAddress['postcode'] = NULL;
 
-    $bGetAddressFromDeclaration = stristr( $sSource, 'CONTRIBUTION' ) ? false : true;
+    $bGetAddressFromDeclaration = stristr($sSource, 'CONTRIBUTION') ? FALSE : TRUE;
     if ($bGetAddressFromDeclaration) {
       // We need to get the declaration that was current at the time that the contribution was made.
       // Look for a declaration that:
@@ -159,10 +162,10 @@ SQL;
       , $i18nRewrite   = TRUE
       , $trapException = TRUE /* This must be explicitly set to TRUE for the code below to handle any Exceptions */
     );
-    if ( !( is_a( $oDao, 'DB_Error' ) ) ) {
-      if ( $oDao->fetch() ) {
+    if (!(is_a($oDao, 'DB_Error' ))) {
+      if ($oDao->fetch()) {
         $aAddress['id']       = $oDao->id;
-        $aAddress['address']  = self::getHouseNo( $oDao->address );
+        $aAddress['address']  = self::getHouseNo($oDao->address);
         $aAddress['postcode'] = $oDao->postcode;
       }
     }
@@ -755,7 +758,7 @@ EOD;
   /**
    * Get the successful response text message.
    *
-   * @return the text successful messages.
+   * @return string the text successful messages.
    */
   public function getResponseSuccessfullMessage() {
     $oBody    = $this->getResponseBody();
