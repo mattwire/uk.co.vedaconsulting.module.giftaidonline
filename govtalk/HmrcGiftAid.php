@@ -114,7 +114,45 @@ EOD;
     }
   }
 
-  private function getDonorAddress( $p_contact_id, $p_contribution_id,  $p_contribution_receive_date ) {
+  /**
+   * Returns the contact name in a format accepted by HMRC.
+   * Each Name must be 1-35 characters Alphabetic including the single quote, dot, and hyphen symbol.
+   * First name cannot have spaces
+   *
+   * @param string $firstName
+   * @param string $lastName
+   *
+   * @return array [[firstname,lastname], errors]
+   * @throws \CiviCRM_API3_Exception
+   */
+  private static function getDonorName($firstName, $lastName) {
+    if (empty($firstName)) {
+      $errors[] = 'First name cannot be empty.';
+    }
+    if (empty($lastName)) {
+      $errors[] = 'Last name cannot be empty.';
+    }
+
+    $contactName = [];
+    if (empty($errors)) {
+      $currentLocale = setlocale(LC_CTYPE, 0);
+      setlocale(LC_CTYPE, "en_GB.utf8");
+      $nameParts = [
+        $firstName => "/[^A-Za-z'.-]/",
+        $lastName => "/[^A-Za-z '.-]/"
+      ];
+      foreach ($nameParts as $name => $regex) {
+        $filteredName = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+        $filteredName = preg_replace($regex, '', $filteredName);
+        $contactName[] = substr($filteredName, 0, 35);
+      }
+    }
+
+    setlocale(LC_CTYPE, $currentLocale);
+    return [$contactName, $errors];
+  }
+
+  private function getDonorAddress($p_contact_id, $p_contribution_id, $p_contribution_receive_date) {
     $oSetting             = new CRM_Giftaidonline_Page_giftAidSubmissionSettings();
     $sSource              = $oSetting->get_contribution_details_source();
     $aAddress['id']       = NULL;
@@ -149,7 +187,7 @@ SQL;
               ,        address   AS address
               ,        post_code AS postcode
               FROM     civicrm_value_gift_aid_submission
-              WHERE    entity_id  = %1
+              WHERE    entity_id = %1
               LIMIT  1
 SQL;
       $aParams = [1 => [$p_contribution_id, 'Integer']];
@@ -162,7 +200,7 @@ SQL;
       , $i18nRewrite   = TRUE
       , $trapException = TRUE /* This must be explicitly set to TRUE for the code below to handle any Exceptions */
     );
-    if (!(is_a($oDao, 'DB_Error' ))) {
+    if (!(is_a($oDao, 'DB_Error'))) {
       if ($oDao->fetch()) {
         $aAddress['id']       = $oDao->id;
         $aAddress['address']  = self::getHouseNo($oDao->address);
@@ -305,8 +343,8 @@ EOD;
     $queryParams          = [1 => [$pBatchId, 'Integer']];
     $oDao                 = CRM_Core_DAO::executeQuery($cDonorSelect, $queryParams);
     $aDonors              = [];
-    $aAddress['address']  = null;
-    $aAddress['postcode'] = null;
+    $aAddress['address']  = NULL;
+    $aAddress['postcode'] = NULL;
 
     // Remove existing validation errors for batch
     $deleteSQL = "DELETE FROM civicrm_gift_aid_rejected_contributions WHERE batch_id=%1";
@@ -319,44 +357,38 @@ EOD;
 
       // Check first/last name
       $bValidDonorData = TRUE;
-      if (!self::isValidPersonName($oDao->first_name)) {
+      list($donorNames, $errors) = self::getDonorName($oDao->first_name, $oDao->last_name);
+      if (!empty($errors)) {
         $bValidDonorData = FALSE;
-        $validationDetail[] = 'First name invalid';
+        $validationDetail = array_merge($validationDetail, $errors);
+        $validationMsg = "INVALID DONOR DETAILS : FIRST NAME OR LAST NAME ERROR";
       }
-      if (!self::isValidPersonName($oDao->last_name)) {
+      // Check address
+      $aAddress = self::getDonorAddress($oDao->contact_id, $oDao->contribution_id, date('YmdHis', strtotime($oDao->created_date)));
+
+      // Check address / postcode
+      $bValidAddress = TRUE;
+      if (empty($aAddress['address'])) {
+        $validationDetail[] = 'Empty address';
+        $bValidAddress = FALSE;
+      }
+      // Need to clean up the postcode before we can submit it
+      $formattedPostcode = self::postcodeFormat($aAddress['postcode']);
+      if (!self::isPostcode($formattedPostcode)) {
+        $validationDetail[] = 'Postcode invalid';
+        $bValidAddress = FALSE;
+      }
+      if (!$bValidAddress) {
         $bValidDonorData = FALSE;
-        $validationDetail[] = 'Last name invalid';
+        $validationMsg = "INVALID DONOR DETAILS : ADDRESS DATA ";
       }
-      if (!$bValidDonorData) {
-        $validationMsg = "INVALID DONOR DETAILS : FIRST NAME OR LAST NAME MISSING ";
-      }
-      else {
-        $aAddress = self::getDonorAddress($oDao->contact_id, $oDao->contribution_id, date('YmdHis', strtotime($oDao->created_date)));
 
-        // Check address / postcode
-        $bValidAddress = TRUE;
-        if (empty($aAddress['address'])) {
-          $validationDetail[] = 'Empty address';
-          $bValidAddress = FALSE;
-        }
-        // Need to clean up the postcode before we can submit it
-        $formattedPostcode = self::postcodeFormat($aAddress['postcode']);
-        if (!self::isPostcode($formattedPostcode)) {
-          $validationDetail[] = 'Postcode invalid';
-          $bValidAddress = FALSE;
-        }
-        if (!$bValidAddress) {
-          $bValidDonorData = false;
-          $validationMsg = "INVALID DONOR DETAILS : ADDRESS DATA ";
-        }
-
-        // Need to check if the amount is greater than 0.00 before submitting the batch
-        $isValidAmount = $oDao->amount >= 0.01 ? true : false;
-        if (!$isValidAmount) {
-          $bValidDonorData = false;
-          $validationMsg = "INVALID DONOR DETAILS : AMOUNT IS LESS THAN 0.01 ";
-          $validationDetail[] = "Amount: {$oDao->amount}";
-        }
+      // Need to check if the amount is greater than 0.00 before submitting the batch
+      $isValidAmount = $oDao->amount >= 0.01 ? TRUE : FALSE;
+      if (!$isValidAmount) {
+        $bValidDonorData = FALSE;
+        $validationMsg = "INVALID DONOR DETAILS : AMOUNT IS LESS THAN 0.01 ";
+        $validationDetail[] = "Amount: {$oDao->amount}";
       }
 
       // Need to find a way to let the submitter know if the contribution has been knocked off
@@ -364,8 +396,8 @@ EOD;
       // at the moment just stopping invalid data from pushing through
       if ($bValidDonorData) {
         $aDonors[] = [
-          'forename'        => $oDao->first_name,
-          'surname'         => $oDao->last_name,
+          'forename'        => $donorNames[0],
+          'surname'         => $donorNames[1],
           'house_no'        => $aAddress['address'],
           'postcode'        => $formattedPostcode,
           'date'            => date('Y-m-d', strtotime($oDao->created_date)),
@@ -379,8 +411,8 @@ EOD;
           'created_date' => $oDao->created_date,
           'contribution_id' => $oDao->contribution_id,
           'contact_id' => $oDao->contact_id,
-          'first_name' => $oDao->first_name,
-          'last_name' => $oDao->last_name,
+          'first_name' => $donorNames[0],
+          'last_name' => $donorNames[1],
           'amount' => $oDao->amount,
           'gift_aid_amount' => $oDao->gift_aid_amount,
           'address' => $aAddress['address'],

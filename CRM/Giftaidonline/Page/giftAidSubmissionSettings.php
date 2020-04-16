@@ -39,8 +39,8 @@ SQL;
   }
 
   public function get_contribution_details_source() {
-    $aSetting = $this->get_setting( 'CONTRIBUTION_DETAILS_SOURCE' );
-    if ( empty( $aSetting ) ) {
+    $aSetting = $this->get_setting('CONTRIBUTION_DETAILS_SOURCE');
+    if (empty($aSetting)) {
       return 'DECLARATION';
     } else {
       return $aSetting['value'];
