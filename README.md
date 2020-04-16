@@ -13,6 +13,10 @@ The extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 ## Release Notes
 
+### 1.8.1
+
+* Validate and filter donor first/last name before submitting to comply with data format restrictions.
+
 ### 1.8
 
 * Fix postcode validation and support 'X' for postcode which can be entered for non UK addresses.
