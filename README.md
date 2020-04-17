@@ -13,6 +13,13 @@ The extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 ## Release Notes
 
+### 1.8.2
+
+**Requires GiftAid extension 3.3.8 or newer**
+
+* Moved some internal name/address formatting functions to the giftaid extension so they can be shared between this extension
+and the reporting functions of the giftaid extension.
+
 ### 1.8.1
 
 * Validate and filter donor first/last name before submitting to comply with data format restrictions.
