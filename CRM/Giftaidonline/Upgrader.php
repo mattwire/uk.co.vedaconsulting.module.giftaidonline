@@ -27,4 +27,11 @@ class CRM_Giftaidonline_Upgrader extends CRM_Giftaidonline_Upgrader_Base {
     return TRUE;
   }
 
+  public function upgrade_1801() {
+    $this->ctx->log->info('Remove CONTRIBUTION_DETAILS_SOURCE setting');
+
+    CRM_Core_DAO::executeQuery('DELETE FROM `civicrm_gift_aid_submission_setting` WHERE `name` = "CONTRIBUTION_DETAILS_SOURCE"');
+    return TRUE;
+  }
+
 }

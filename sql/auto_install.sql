@@ -72,5 +72,4 @@ VALUES
 ('AUTH_OFF_SURNAME', '', 'Surname of the Authorising Officer for your organisation'),
 ('AUTH_OFF_FORENAME', '', 'Forename of the Authorising Officer for your organisation'),
 ('AUTH_OFF_PHONE', '', 'Phone Number of the Authorising Officer for your organisation'),
-('AUTH_OFF_POSTCODE', '', 'Postcode of the Authorising Officer for your organisation e.g. EC2A 3AY'),
-('CONTRIBUTION_DETAILS_SOURCE', 'DECLARATION', 'Where the Contribution details should be gathered from.  Contribution or GiftAid Declaration, default is Declaration.');
+('AUTH_OFF_POSTCODE', '', 'Postcode of the Authorising Officer for your organisation e.g. EC2A 3AY');

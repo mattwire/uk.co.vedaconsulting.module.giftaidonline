@@ -1,4 +1,7 @@
 # Release Notes
+## 1.8.4
+
+* Remove support for retrieving address from contribution (this likely has not worked for a long time because the database fields didn't exist).
 
 ## 1.8.3
 

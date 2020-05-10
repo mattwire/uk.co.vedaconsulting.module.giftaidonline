@@ -38,15 +38,6 @@ SQL;
     return $aSettings;
   }
 
-  public function get_contribution_details_source() {
-    $aSetting = $this->get_setting('CONTRIBUTION_DETAILS_SOURCE');
-    if (empty($aSetting)) {
-      return 'DECLARATION';
-    } else {
-      return $aSetting['value'];
-    }
-  }
-
   public function get_all_gift_aid_submission_setting() {
     $settings_query    =   "SELECT * FROM civicrm_gift_aid_submission_setting";
     $settings_Dao     = CRM_Core_DAO::executeQuery( $settings_query );

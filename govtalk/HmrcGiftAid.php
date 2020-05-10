@@ -231,7 +231,7 @@ EOD;
         $validationMsg = "INVALID DONOR DETAILS : FIRST NAME OR LAST NAME ERROR";
       }
       // Check address
-      $aAddress = CRM_Civigiftaid_Declaration::getDonorAddress($oDao->contact_id, $oDao->contribution_id, date('YmdHis', strtotime($oDao->created_date)));
+      $aAddress = CRM_Civigiftaid_Declaration::getDonorAddress($oDao->contact_id, date('YmdHis', strtotime($oDao->created_date)));
 
       // Check address / postcode
       $bValidAddress = TRUE;
