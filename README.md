@@ -6,7 +6,7 @@ For information about the latest improvements, please visit: https://vedaconsult
 
 ## Requirements
 * The GiftAid extension from https://github.com/mattwire/uk.co.compucorp.civicrm.giftaid
-* CiviCRM 5.19+
+* CiviCRM 5.24+
 
 ## Licensing
 The extension is licensed under [AGPL-3.0](LICENSE.txt).

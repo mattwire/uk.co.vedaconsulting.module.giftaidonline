@@ -1,4 +1,9 @@
 # Release Notes
+
+## 1.8.5
+
+* Fix creating "Gift Aid Submission failure" report on install and change name on upgrade.
+
 ## 1.8.4
 
 * Remove support for retrieving address from contribution (this likely has not worked for a long time because the database fields didn't exist).

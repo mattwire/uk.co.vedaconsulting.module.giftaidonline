@@ -555,7 +555,7 @@ class CRM_Giftaidonline_Page_OnlineSubmission extends CRM_Core_Page {
     if (!isset(\Civi::$statics[__CLASS__]['reportURL'])) {
       // Get report instance
       try {
-        $result = civicrm_api3('ReportInstance', 'getsingle', ['report_id' => GIFTAID_FAILURE_REPORT_ID]);
+        $result = civicrm_api3('ReportInstance', 'getsingle', ['report_id' => E::SHORT_NAME . '/giftaidonlinefailure']);
         if (!empty($result['id'])) {
           \Civi::$statics[__CLASS__]['reportURL'] = 'civicrm/report/instance/' . $result['id'];
         }
