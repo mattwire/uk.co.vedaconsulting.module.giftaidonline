@@ -1,3 +1,5 @@
+# Moved to https://lab.civicrm.org/extensions/ukgiftaidsubmission
+
 # OnlineGiftAidSubmission Extension for CiviCRM
 
 **Submit Gift Aid reports directly to the UK Government (HMRC Treasury)**
